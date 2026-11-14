@@ -1,0 +1,928 @@
+{
+  "entities": {
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Pengguna yang terdaftar sebagai pengelola Kost Putra Agan.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Email Google pengelola"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80,
+          "description": "Nama lengkap pengelola"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["owner", "staff"],
+          "description": "Peran pengelola"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "name", "role", "createdAt"]
+    },
+    "AdminInvite": {
+      "title": "AdminInvite",
+      "description": "Daftar email Google pengelola/penjaga kos yang diundang langsung.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "role": {
+          "type": "string",
+          "enum": ["owner", "staff"]
+        },
+        "addedBy": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "name", "role", "addedBy", "createdAt"]
+    },
+    "RoomTypeConfig": {
+      "title": "RoomTypeConfig",
+      "description": "Konfigurasi tipe kamar (Tipe A, Tipe B, Tipe C) termasuk nama panel, harga, galeri multi-gambar, deskripsi, dan fasilitas.",
+      "type": "object",
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": ["Tipe A", "Tipe B", "Tipe C"]
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "subtitle": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "monthlyRate": {
+          "type": "number"
+        },
+        "areaSqm": {
+          "type": "number"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "imageUrl": {
+          "type": "string",
+          "maxLength": 450000
+        },
+        "images": {
+          "type": "array",
+          "description": "Galeri multi-foto interior kamar (kasur, toilet, meja belajar, dll), maksimal 6 foto."
+        },
+        "facilities": {
+          "type": "array"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "tier",
+        "subtitle",
+        "monthlyRate",
+        "areaSqm",
+        "description",
+        "imageUrl",
+        "facilities",
+        "updatedAt"
+      ]
+    },
+    "RoomUnit": {
+      "title": "RoomUnit",
+      "description": "Data unit kamar fisik, status ketersediaan, serta profil kwitansi & metode pembayaran per kamar.",
+      "type": "object",
+      "properties": {
+        "number": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9\\-]{1,10}$",
+          "maxLength": 10
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "floor": {
+          "type": "number"
+        },
+        "tier": {
+          "type": "string",
+          "enum": ["Tipe A", "Tipe B", "Tipe C", "Standar AC", "Deluxe AC", "Corner Suite"]
+        },
+        "monthlyRate": {
+          "type": "number"
+        },
+        "areaSqm": {
+          "type": "number"
+        },
+        "facilities": {
+          "type": "array"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Terisi", "Tersedia", "Perawatan"]
+        },
+        "receiptProfile": {
+          "type": "object",
+          "description": "Pengaturan metode pembayaran, link khusus, otomatisasi PDF, dan catatan kwitansi per unit kamar."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "number",
+        "floor",
+        "tier",
+        "monthlyRate",
+        "areaSqm",
+        "facilities",
+        "status",
+        "updatedAt"
+      ]
+    },
+    "TenantOccupancy": {
+      "title": "TenantOccupancy",
+      "description": "Data pribadi (PII) penyewa aktif per kamar, termasuk info deposit, hanya dapat diakses admin.",
+      "type": "object",
+      "properties": {
+        "roomNumber": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9\\-]{1,10}$",
+          "maxLength": 10
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "institution": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "originCity": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "checkInDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "dueDay": {
+          "type": "number"
+        },
+        "emergencyContact": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "depositAmount": {
+          "type": "number"
+        },
+        "depositStatus": {
+          "type": "string",
+          "enum": ["Belum Bayar", "Disimpan", "Dikembalikan"]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "roomNumber",
+        "name",
+        "phone",
+        "institution",
+        "originCity",
+        "checkInDate",
+        "dueDay",
+        "emergencyContact",
+        "updatedAt"
+      ]
+    },
+    "TenantHistoryRecord": {
+      "title": "TenantHistoryRecord",
+      "description": "Arsip riwayat penyewa yang telah check-out dari unit kamar.",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "roomNumber": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "roomName": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "institution": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "originCity": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "checkInDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "checkOutDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "monthlyRate": {
+          "type": "number"
+        },
+        "depositAmount": {
+          "type": "number"
+        },
+        "depositStatus": {
+          "type": "string",
+          "enum": ["Belum Bayar", "Disimpan", "Dikembalikan"]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "roomId",
+        "roomNumber",
+        "name",
+        "phone",
+        "checkInDate",
+        "checkOutDate",
+        "monthlyRate",
+        "createdAt"
+      ]
+    },
+    "MaintenanceLog": {
+      "title": "MaintenanceLog",
+      "description": "Catatan laporan kerusakan, servis AC, listrik, air, atau perawatan unit kamar.",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "roomNumber": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "category": {
+          "type": "string",
+          "enum": ["AC", "Listrik", "Air & Sanitasi", "Kunci & Pintu", "Kebersihan", "Lainnya"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Dilaporkan", "Diproses", "Selesai"]
+        },
+        "cost": {
+          "type": "number"
+        },
+        "reportedDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "roomId",
+        "roomNumber",
+        "title",
+        "category",
+        "status",
+        "cost",
+        "reportedDate",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PaymentRecord": {
+      "title": "PaymentRecord",
+      "description": "Catatan tagihan, denda keterlambatan, link pembayaran, dan kwitansi PDF otomatis.",
+      "type": "object",
+      "properties": {
+        "invoiceNo": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "roomNumber": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9\\-]{1,10}$",
+          "maxLength": 10
+        },
+        "tenantName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "month": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}$",
+          "maxLength": 10
+        },
+        "amount": {
+          "type": "number"
+        },
+        "lateFee": {
+          "type": "number"
+        },
+        "paidDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Lunas", "Belum Bayar"]
+        },
+        "method": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "paymentLinkId": {
+          "type": "string",
+          "maxLength": 80,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "receiptGeneratedAt": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "invoiceNo",
+        "roomNumber",
+        "tenantName",
+        "month",
+        "amount",
+        "status",
+        "updatedAt"
+      ]
+    },
+    "PaymentLinkRecord": {
+      "title": "PaymentLinkRecord",
+      "description": "Tautan tagihan & kwitansi PDF mandiri yang dapat dibagikan ke penyewa untuk pembayaran Bank/QRIS tanpa mengekspos PII sensitif.",
+      "type": "object",
+      "properties": {
+        "paymentId": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "roomId": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "roomNumber": {
+          "type": "string",
+          "maxLength": 10
+        },
+        "roomName": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "tenantName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "month": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}$",
+          "maxLength": 10
+        },
+        "invoiceNo": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "amount": {
+          "type": "number"
+        },
+        "lateFee": {
+          "type": "number"
+        },
+        "dueDay": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Belum Bayar", "Menunggu Verifikasi", "Lunas"]
+        },
+        "preferredMethod": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "bankName": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "accountNumber": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "accountHolder": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "qrisImageUrl": {
+          "type": "string",
+          "maxLength": 450000
+        },
+        "externalPaymentLink": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "paidDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "method": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "confirmationMethod": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "confirmationNote": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "confirmedAt": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "propertyName": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "propertyAddress": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "adminName": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "whatsappAdmin": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "receiptSnapshot": {
+          "type": "object",
+          "description": "Snapshot format kwitansi PDF dan info deposit agar unduhan PDF dari link sesuai profil kamar."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "paymentId",
+        "roomId",
+        "roomNumber",
+        "tenantName",
+        "month",
+        "invoiceNo",
+        "amount",
+        "dueDay",
+        "status",
+        "preferredMethod",
+        "propertyName",
+        "adminName",
+        "updatedAt"
+      ]
+    },
+    "ExpenseRecord": {
+      "title": "ExpenseRecord",
+      "description": "Catatan pengeluaran operasional properti.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 160
+        },
+        "category": {
+          "type": "string",
+          "enum": ["Listrik", "Air", "Bahan", "Tagihan", "Lainnya"]
+        },
+        "amount": {
+          "type": "number"
+        },
+        "date": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "month": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}$",
+          "maxLength": 10
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["title", "category", "amount", "date", "month", "createdAt"]
+    },
+    "MessageTemplate": {
+      "title": "MessageTemplate",
+      "description": "Template pesan WhatsApp yang dapat dimodifikasi admin dengan variabel otomatis dan ekspor pesan.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "category": {
+          "type": "string",
+          "enum": ["tagihan", "tunggakan", "lunas", "promo", "pengumuman", "kustom"]
+        },
+        "body": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2500
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["name", "category", "body", "updatedAt"]
+    },
+    "TenantApplication": {
+      "title": "TenantApplication",
+      "description": "Pengajuan pendaftaran mandiri oleh calon penyewa kamar kos.",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "roomNumber": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9\\-]{1,10}$",
+          "maxLength": 10
+        },
+        "applicantName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 30
+        },
+        "institution": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 140
+        },
+        "originCity": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "plannedCheckInDate": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "emergencyContact": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 120
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Menunggu", "Diterima", "Ditolak"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "roomId",
+        "roomNumber",
+        "applicantName",
+        "phone",
+        "institution",
+        "originCity",
+        "plannedCheckInDate",
+        "emergencyContact",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PropertySettingsPublic": {
+      "title": "PropertySettingsPublic",
+      "description": "Konfigurasi profil properti, kanal transfer bank, QRIS, dan link pembayaran default.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "tagline": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "address": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "whatsappAdmin": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "paymentAccountInfo": {
+          "type": "string",
+          "maxLength": 240
+        },
+        "paymentBankName": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "paymentBankAccount": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "paymentBankHolder": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "qrisImageUrl": {
+          "type": "string",
+          "maxLength": 450000
+        },
+        "externalPaymentLink": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "defaultDueDay": {
+          "type": "number"
+        },
+        "totalRooms": {
+          "type": "number"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "name",
+        "tagline",
+        "address",
+        "whatsappAdmin",
+        "defaultDueDay",
+        "totalRooms",
+        "updatedAt"
+      ]
+    },
+    "ReceiptTemplateConfig": {
+      "title": "ReceiptTemplateConfig",
+      "description": "Format kwitansi PDF yang dapat diedit admin dan pengaturan otomatisasi terbit/unduh/WA saat bayar.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "subtitle": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "accentTheme": {
+          "type": "string",
+          "enum": ["teal", "navy", "slate"]
+        },
+        "includedItemsText": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "footerNote": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "signerLabel": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "showLogo": {
+          "type": "boolean"
+        },
+        "showAddress": {
+          "type": "boolean"
+        },
+        "showQrVerification": {
+          "type": "boolean"
+        },
+        "showDepositInfo": {
+          "type": "boolean"
+        },
+        "autoGeneratePdfOnPaid": {
+          "type": "boolean"
+        },
+        "autoOpenReceiptModalOnPaid": {
+          "type": "boolean"
+        },
+        "autoOpenWaOnPaid": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "title",
+        "subtitle",
+        "accentTheme",
+        "includedItemsText",
+        "footerNote",
+        "signerLabel",
+        "showLogo",
+        "showAddress",
+        "showQrVerification",
+        "showDepositInfo",
+        "autoGeneratePdfOnPaid",
+        "autoOpenReceiptModalOnPaid",
+        "autoOpenWaOnPaid",
+        "updatedAt"
+      ]
+    },
+    "AdminPreferences": {
+      "title": "AdminPreferences",
+      "description": "Preferensi tampilan dan nama pengelola untuk dashboard admin.",
+      "type": "object",
+      "properties": {
+        "adminName": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "adminInitials": {
+          "type": "string",
+          "maxLength": 4
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dark", "light"]
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["adminName", "adminInitials", "theme", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Daftar UID admin yang terdaftar dan berwenang mengelola data properti."
+    },
+    "/adminInvites/{inviteEmail}": {
+      "schema": { "$ref": "#/entities/AdminInvite" },
+      "description": "Daftar email Google pengelola/penjaga kos yang diundang langsung."
+    },
+    "/roomTypes/{typeId}": {
+      "schema": { "$ref": "#/entities/RoomTypeConfig" },
+      "description": "Konfigurasi panel, harga, gambar, dan deskripsi untuk Tipe A, Tipe B, dan Tipe C."
+    },
+    "/rooms/{roomId}": {
+      "schema": { "$ref": "#/entities/RoomUnit" },
+      "description": "Katalog unit kamar, status ketersediaan, serta profil pembayaran & kwitansi per kamar."
+    },
+    "/tenants/{roomId}": {
+      "schema": { "$ref": "#/entities/TenantOccupancy" },
+      "description": "Data PII penyewa aktif per unit kamar, terisolasi khusus admin."
+    },
+    "/tenantHistory/{historyId}": {
+      "schema": { "$ref": "#/entities/TenantHistoryRecord" },
+      "description": "Riwayat penghuni lama yang pernah menempati unit kamar."
+    },
+    "/maintenanceLogs/{logId}": {
+      "schema": { "$ref": "#/entities/MaintenanceLog" },
+      "description": "Catatan perawatan dan perbaikan kondisi unit kamar."
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/PaymentRecord" },
+      "description": "Ledger pembayaran sewa, denda, link pembayaran, dan kwitansi bulanan."
+    },
+    "/paymentLinks/{linkId}": {
+      "schema": { "$ref": "#/entities/PaymentLinkRecord" },
+      "description": "Tautan checkout Bank/QRIS dan unduhan kwitansi PDF otomatis per tagihan."
+    },
+    "/expenses/{expenseId}": {
+      "schema": { "$ref": "#/entities/ExpenseRecord" },
+      "description": "Catatan pengeluaran operasional properti."
+    },
+    "/messageTemplates/{templateId}": {
+      "schema": { "$ref": "#/entities/MessageTemplate" },
+      "description": "Template pesan WhatsApp yang dapat dimodifikasi oleh admin."
+    },
+    "/applications/{applicationId}": {
+      "schema": { "$ref": "#/entities/TenantApplication" },
+      "description": "Pendaftaran mandiri calon penyewa yang menunggu verifikasi admin."
+    },
+    "/settings/property": {
+      "schema": { "$ref": "#/entities/PropertySettingsPublic" },
+      "description": "Informasi umum properti, rekening bank, QRIS, dan link pembayaran Kost Putra Agan."
+    },
+    "/settings/receipt": {
+      "schema": { "$ref": "#/entities/ReceiptTemplateConfig" },
+      "description": "Format template kwitansi PDF dan pengaturan otomatisasi terbit/kirim kwitansi."
+    },
+    "/settings/admin": {
+      "schema": { "$ref": "#/entities/AdminPreferences" },
+      "description": "Preferensi admin dan tema tampilan."
+    }
+  }
+}

@@ -1,0 +1,586 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Reusable Primitives
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidEmailId(emailId) {
+      return emailId is string && emailId.size() >= 3 && emailId.size() <= 120 && emailId.matches('^[^/\\s]+@[^/\\s]+\\.[^/\\s]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isInvitedAdmin() {
+      return isVerifiedUser()
+        && request.auth.token.email is string
+        && exists(/databases/$(database)/documents/adminInvites/$(request.auth.token.email.lower()));
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        (request.auth.token.email is string && request.auth.token.email.lower() == 'ekall2h@gmail.com')
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        || isInvitedAdmin()
+      );
+    }
+
+    // Validation Helpers
+    function isValidAdminUser(data) {
+      return data.keys().hasAll(['email', 'name', 'role', 'createdAt'])
+        && data.keys().hasOnly(['email', 'name', 'role', 'createdAt'])
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 120
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 80
+        && data.role in ['owner', 'staff']
+        && data.createdAt is timestamp;
+    }
+
+    function isValidAdminInvite(data) {
+      return data.keys().hasAll(['email', 'name', 'role', 'addedBy', 'createdAt'])
+        && data.keys().hasOnly(['email', 'name', 'role', 'addedBy', 'createdAt'])
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 120
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.role in ['owner', 'staff']
+        && data.addedBy is string && data.addedBy.size() >= 3 && data.addedBy.size() <= 120
+        && data.createdAt is timestamp;
+    }
+
+    function isValidRoomTypeConfig(data) {
+      return data.keys().hasAll(['tier', 'subtitle', 'monthlyRate', 'areaSqm', 'description', 'imageUrl', 'facilities', 'updatedAt'])
+        && data.keys().hasOnly(['tier', 'displayName', 'subtitle', 'monthlyRate', 'areaSqm', 'description', 'imageUrl', 'images', 'facilities', 'updatedAt'])
+        && data.tier in ['Tipe A', 'Tipe B', 'Tipe C']
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 60))
+        && data.subtitle is string && data.subtitle.size() >= 1 && data.subtitle.size() <= 80
+        && data.monthlyRate is number && data.monthlyRate >= 0 && data.monthlyRate <= 50000000
+        && data.areaSqm is number && data.areaSqm >= 4 && data.areaSqm <= 100
+        && data.description is string && data.description.size() <= 600
+        && data.imageUrl is string && data.imageUrl.size() <= 450000
+        && (!('images' in data) || (
+          data.images is list
+          && data.images.size() >= 1
+          && data.images.size() <= 6
+          && data.images[0] is map
+          && data.images[0].keys().hasAll(['url', 'label'])
+          && data.images[0].keys().hasOnly(['url', 'label'])
+          && data.images[0].url is string && data.images[0].url.size() <= 450000
+          && data.images[0].label is string && data.images[0].label.size() <= 60
+        ))
+        && data.facilities is list && data.facilities.size() > 0 && data.facilities.size() <= 15 && data.facilities[0] is string
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRoomReceiptProfile(prof) {
+      return prof is map
+        && prof.keys().hasOnly([
+          'useCustom', 'preferredMethod', 'bankName', 'accountNumber',
+          'accountHolder', 'customPaymentUrl', 'autoPdfOnPaid',
+          'autoOpenWaOnPaid', 'customReceiptNote'
+        ])
+        && (!('useCustom' in prof) || prof.useCustom is bool)
+        && (!('preferredMethod' in prof) || (prof.preferredMethod is string && prof.preferredMethod.size() <= 40))
+        && (!('bankName' in prof) || (prof.bankName is string && prof.bankName.size() <= 50))
+        && (!('accountNumber' in prof) || (prof.accountNumber is string && prof.accountNumber.size() <= 60))
+        && (!('accountHolder' in prof) || (prof.accountHolder is string && prof.accountHolder.size() <= 80))
+        && (!('customPaymentUrl' in prof) || (prof.customPaymentUrl is string && prof.customPaymentUrl.size() <= 300))
+        && (!('autoPdfOnPaid' in prof) || prof.autoPdfOnPaid is bool)
+        && (!('autoOpenWaOnPaid' in prof) || prof.autoOpenWaOnPaid is bool)
+        && (!('customReceiptNote' in prof) || (prof.customReceiptNote is string && prof.customReceiptNote.size() <= 240));
+    }
+
+    function isValidRoomUnit(data) {
+      return data.keys().hasAll(['number', 'floor', 'tier', 'monthlyRate', 'areaSqm', 'facilities', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['number', 'name', 'floor', 'tier', 'monthlyRate', 'areaSqm', 'facilities', 'status', 'receiptProfile', 'updatedAt'])
+        && data.number is string && data.number.size() >= 1 && data.number.size() <= 10 && data.number.matches('^[a-zA-Z0-9\\-]+$')
+        && (!('name' in data) || (data.name is string && data.name.size() >= 1 && data.name.size() <= 60))
+        && data.floor is number && data.floor >= 1 && data.floor <= 10
+        && data.tier in ['Tipe A', 'Tipe B', 'Tipe C', 'Standar AC', 'Deluxe AC', 'Corner Suite']
+        && data.monthlyRate is number && data.monthlyRate >= 0 && data.monthlyRate <= 50000000
+        && data.areaSqm is number && data.areaSqm >= 4 && data.areaSqm <= 100
+        && data.facilities is list && data.facilities.size() > 0 && data.facilities.size() <= 15 && data.facilities[0] is string
+        && data.status in ['Terisi', 'Tersedia', 'Perawatan']
+        && (!('receiptProfile' in data) || isValidRoomReceiptProfile(data.receiptProfile))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTenantOccupancy(data) {
+      return data.keys().hasAll(['roomNumber', 'name', 'phone', 'institution', 'originCity', 'checkInDate', 'dueDay', 'emergencyContact', 'updatedAt'])
+        && data.keys().hasOnly(['roomNumber', 'name', 'phone', 'institution', 'originCity', 'checkInDate', 'dueDay', 'emergencyContact', 'depositAmount', 'depositStatus', 'notes', 'updatedAt'])
+        && data.roomNumber is string && data.roomNumber.size() >= 1 && data.roomNumber.size() <= 10 && data.roomNumber.matches('^[a-zA-Z0-9\\-]+$')
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.phone is string && data.phone.size() >= 4 && data.phone.size() <= 30
+        && data.institution is string && data.institution.size() >= 1 && data.institution.size() <= 140
+        && data.originCity is string && data.originCity.size() >= 1 && data.originCity.size() <= 80
+        && data.checkInDate is string && data.checkInDate.size() >= 8 && data.checkInDate.size() <= 20
+        && data.dueDay is number && data.dueDay >= 1 && data.dueDay <= 28
+        && data.emergencyContact is string && data.emergencyContact.size() >= 2 && data.emergencyContact.size() <= 120
+        && (!('depositAmount' in data) || (data.depositAmount is number && data.depositAmount >= 0 && data.depositAmount <= 50000000))
+        && (!('depositStatus' in data) || (data.depositStatus is string && data.depositStatus in ['Belum Bayar', 'Disimpan', 'Dikembalikan']))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 300))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTenantHistory(data) {
+      return data.keys().hasAll(['roomId', 'roomNumber', 'name', 'phone', 'checkInDate', 'checkOutDate', 'monthlyRate', 'createdAt'])
+        && data.keys().hasOnly(['roomId', 'roomNumber', 'roomName', 'name', 'phone', 'institution', 'originCity', 'checkInDate', 'checkOutDate', 'monthlyRate', 'depositAmount', 'depositStatus', 'notes', 'createdAt'])
+        && data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 40
+        && data.roomNumber is string && data.roomNumber.size() >= 1 && data.roomNumber.size() <= 10
+        && (!('roomName' in data) || (data.roomName is string && data.roomName.size() <= 60))
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.phone is string && data.phone.size() >= 1 && data.phone.size() <= 30
+        && (!('institution' in data) || (data.institution is string && data.institution.size() <= 140))
+        && (!('originCity' in data) || (data.originCity is string && data.originCity.size() <= 80))
+        && data.checkInDate is string && data.checkInDate.size() >= 8 && data.checkInDate.size() <= 20
+        && data.checkOutDate is string && data.checkOutDate.size() >= 8 && data.checkOutDate.size() <= 20
+        && data.monthlyRate is number && data.monthlyRate >= 0 && data.monthlyRate <= 50000000
+        && (!('depositAmount' in data) || (data.depositAmount is number && data.depositAmount >= 0 && data.depositAmount <= 50000000))
+        && (!('depositStatus' in data) || (data.depositStatus is string && data.depositStatus in ['Belum Bayar', 'Disimpan', 'Dikembalikan']))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 300))
+        && data.createdAt is timestamp;
+    }
+
+    function isValidMaintenanceLog(data) {
+      return data.keys().hasAll(['roomId', 'roomNumber', 'title', 'category', 'status', 'cost', 'reportedDate', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['roomId', 'roomNumber', 'title', 'category', 'status', 'cost', 'reportedDate', 'notes', 'createdAt', 'updatedAt'])
+        && data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 40
+        && data.roomNumber is string && data.roomNumber.size() >= 1 && data.roomNumber.size() <= 10
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 140
+        && data.category in ['AC', 'Listrik', 'Air & Sanitasi', 'Kunci & Pintu', 'Kebersihan', 'Lainnya']
+        && data.status in ['Dilaporkan', 'Diproses', 'Selesai']
+        && data.cost is number && data.cost >= 0 && data.cost <= 100000000
+        && data.reportedDate is string && data.reportedDate.size() >= 8 && data.reportedDate.size() <= 20
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 300))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPaymentRecord(data) {
+      return data.keys().hasAll(['invoiceNo', 'roomNumber', 'tenantName', 'month', 'amount', 'status', 'updatedAt'])
+        && data.keys().hasOnly(['invoiceNo', 'roomNumber', 'tenantName', 'month', 'amount', 'lateFee', 'paidDate', 'status', 'method', 'notes', 'paymentLinkId', 'receiptGeneratedAt', 'updatedAt'])
+        && data.invoiceNo is string && data.invoiceNo.size() >= 5 && data.invoiceNo.size() <= 40
+        && data.roomNumber is string && data.roomNumber.size() >= 1 && data.roomNumber.size() <= 10 && data.roomNumber.matches('^[a-zA-Z0-9\\-]+$')
+        && data.tenantName is string && data.tenantName.size() >= 2 && data.tenantName.size() <= 100
+        && data.month is string && data.month.size() <= 10 && data.month.matches('^[0-9]{4}-[0-9]{2}$')
+        && data.amount is number && data.amount >= 0 && data.amount <= 50000000
+        && (!('lateFee' in data) || (data.lateFee is number && data.lateFee >= 0 && data.lateFee <= 20000000))
+        && (!('paidDate' in data) || data.paidDate == null || (data.paidDate is string && data.paidDate.size() <= 20))
+        && data.status in ['Lunas', 'Belum Bayar']
+        && (!('method' in data) || data.method == null || (data.method is string && data.method.size() <= 40))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 300))
+        && (!('paymentLinkId' in data) || (data.paymentLinkId is string && data.paymentLinkId.size() >= 6 && data.paymentLinkId.size() <= 80 && data.paymentLinkId.matches('^[a-zA-Z0-9_\\-]+$')))
+        && (!('receiptGeneratedAt' in data) || (data.receiptGeneratedAt is string && data.receiptGeneratedAt.size() <= 30))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReceiptSnapshot(snap) {
+      return snap is map
+        && snap.keys().hasOnly([
+          'title', 'subtitle', 'accentTheme', 'includedItemsText',
+          'footerNote', 'signerLabel', 'customRoomNote', 'showLogo',
+          'showAddress', 'showQrVerification', 'showDepositInfo',
+          'depositAmount', 'depositStatus'
+        ])
+        && (!('title' in snap) || (snap.title is string && snap.title.size() <= 60))
+        && (!('subtitle' in snap) || (snap.subtitle is string && snap.subtitle.size() <= 120))
+        && (!('accentTheme' in snap) || snap.accentTheme in ['teal', 'navy', 'slate'])
+        && (!('includedItemsText' in snap) || (snap.includedItemsText is string && snap.includedItemsText.size() <= 200))
+        && (!('footerNote' in snap) || (snap.footerNote is string && snap.footerNote.size() <= 300))
+        && (!('signerLabel' in snap) || (snap.signerLabel is string && snap.signerLabel.size() <= 60))
+        && (!('customRoomNote' in snap) || (snap.customRoomNote is string && snap.customRoomNote.size() <= 240))
+        && (!('showLogo' in snap) || snap.showLogo is bool)
+        && (!('showAddress' in snap) || snap.showAddress is bool)
+        && (!('showQrVerification' in snap) || snap.showQrVerification is bool)
+        && (!('showDepositInfo' in snap) || snap.showDepositInfo is bool)
+        && (!('depositAmount' in snap) || (snap.depositAmount is number && snap.depositAmount >= 0 && snap.depositAmount <= 50000000))
+        && (!('depositStatus' in snap) || snap.depositStatus in ['Belum Bayar', 'Disimpan', 'Dikembalikan']);
+    }
+
+    function isValidPaymentLink(data) {
+      return data.keys().hasAll(['paymentId', 'roomId', 'roomNumber', 'tenantName', 'month', 'invoiceNo', 'amount', 'dueDay', 'status', 'preferredMethod', 'propertyName', 'adminName', 'updatedAt'])
+        && data.keys().hasOnly([
+          'paymentId', 'roomId', 'roomNumber', 'roomName', 'tenantName', 'month',
+          'invoiceNo', 'amount', 'lateFee', 'dueDay', 'status', 'preferredMethod',
+          'bankName', 'accountNumber', 'accountHolder', 'qrisImageUrl', 'externalPaymentLink',
+          'paidDate', 'method', 'confirmationMethod', 'confirmationNote', 'confirmedAt',
+          'propertyName', 'propertyAddress', 'adminName', 'whatsappAdmin',
+          'receiptSnapshot', 'updatedAt'
+        ])
+        && data.paymentId is string && data.paymentId.size() >= 3 && data.paymentId.size() <= 64
+        && data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 40
+        && data.roomNumber is string && data.roomNumber.size() >= 1 && data.roomNumber.size() <= 10
+        && (!('roomName' in data) || (data.roomName is string && data.roomName.size() <= 60))
+        && data.tenantName is string && data.tenantName.size() >= 2 && data.tenantName.size() <= 100
+        && data.month is string && data.month.size() <= 10 && data.month.matches('^[0-9]{4}-[0-9]{2}$')
+        && data.invoiceNo is string && data.invoiceNo.size() >= 5 && data.invoiceNo.size() <= 40
+        && data.amount is number && data.amount >= 0 && data.amount <= 50000000
+        && (!('lateFee' in data) || (data.lateFee is number && data.lateFee >= 0 && data.lateFee <= 20000000))
+        && data.dueDay is number && data.dueDay >= 1 && data.dueDay <= 28
+        && data.status in ['Belum Bayar', 'Menunggu Verifikasi', 'Lunas']
+        && data.preferredMethod is string && data.preferredMethod.size() <= 40
+        && (!('bankName' in data) || (data.bankName is string && data.bankName.size() <= 50))
+        && (!('accountNumber' in data) || (data.accountNumber is string && data.accountNumber.size() <= 60))
+        && (!('accountHolder' in data) || (data.accountHolder is string && data.accountHolder.size() <= 80))
+        && (!('qrisImageUrl' in data) || (data.qrisImageUrl is string && data.qrisImageUrl.size() <= 450000))
+        && (!('externalPaymentLink' in data) || (data.externalPaymentLink is string && data.externalPaymentLink.size() <= 300))
+        && (!('paidDate' in data) || data.paidDate == null || (data.paidDate is string && data.paidDate.size() <= 20))
+        && (!('method' in data) || data.method == null || (data.method is string && data.method.size() <= 40))
+        && (!('confirmationMethod' in data) || (data.confirmationMethod is string && data.confirmationMethod.size() <= 40))
+        && (!('confirmationNote' in data) || (data.confirmationNote is string && data.confirmationNote.size() <= 200))
+        && (!('confirmedAt' in data) || (data.confirmedAt is string && data.confirmedAt.size() <= 30))
+        && data.propertyName is string && data.propertyName.size() >= 2 && data.propertyName.size() <= 80
+        && (!('propertyAddress' in data) || (data.propertyAddress is string && data.propertyAddress.size() <= 200))
+        && data.adminName is string && data.adminName.size() >= 1 && data.adminName.size() <= 80
+        && (!('whatsappAdmin' in data) || (data.whatsappAdmin is string && data.whatsappAdmin.size() <= 30))
+        && (!('receiptSnapshot' in data) || isValidReceiptSnapshot(data.receiptSnapshot))
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidExpenseRecord(data) {
+      return data.keys().hasAll(['title', 'category', 'amount', 'date', 'month', 'createdAt'])
+        && data.keys().hasOnly(['title', 'category', 'amount', 'date', 'month', 'notes', 'createdAt'])
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 160
+        && data.category in ['Listrik', 'Air', 'Bahan', 'Tagihan', 'Lainnya']
+        && data.amount is number && data.amount >= 0 && data.amount <= 100000000
+        && data.date is string && data.date.size() >= 8 && data.date.size() <= 20
+        && data.month is string && data.month.size() <= 10 && data.month.matches('^[0-9]{4}-[0-9]{2}$')
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 300))
+        && data.createdAt is timestamp;
+    }
+
+    function isValidMessageTemplate(data) {
+      return data.keys().hasAll(['name', 'category', 'body', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'category', 'body', 'updatedAt'])
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.category in ['tagihan', 'tunggakan', 'lunas', 'promo', 'pengumuman', 'kustom']
+        && data.body is string && data.body.size() >= 1 && data.body.size() <= 2500
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTenantApplication(data) {
+      return data.keys().hasAll(['roomId', 'roomNumber', 'applicantName', 'phone', 'institution', 'originCity', 'plannedCheckInDate', 'emergencyContact', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['roomId', 'roomNumber', 'applicantName', 'phone', 'institution', 'originCity', 'plannedCheckInDate', 'emergencyContact', 'notes', 'status', 'createdAt', 'updatedAt'])
+        && data.roomId is string && data.roomId.size() <= 40 && data.roomId.matches('^r-[a-zA-Z0-9_\\-]+$')
+        && data.roomNumber is string && data.roomNumber.size() >= 1 && data.roomNumber.size() <= 10 && data.roomNumber.matches('^[a-zA-Z0-9\\-]+$')
+        && data.roomId == ('r-' + data.roomNumber)
+        && data.applicantName is string && data.applicantName.size() >= 2 && data.applicantName.size() <= 100
+        && data.phone is string && data.phone.size() >= 6 && data.phone.size() <= 30
+        && data.institution is string && data.institution.size() >= 2 && data.institution.size() <= 140
+        && data.originCity is string && data.originCity.size() >= 2 && data.originCity.size() <= 80
+        && data.plannedCheckInDate is string && data.plannedCheckInDate.size() >= 8 && data.plannedCheckInDate.size() <= 20
+        && data.emergencyContact is string && data.emergencyContact.size() >= 4 && data.emergencyContact.size() <= 120
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 300))
+        && data.status in ['Menunggu', 'Diterima', 'Ditolak']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPropertySettingsPublic(data) {
+      return data.keys().hasAll(['name', 'tagline', 'address', 'whatsappAdmin', 'defaultDueDay', 'totalRooms', 'updatedAt'])
+        && data.keys().hasOnly([
+          'name', 'tagline', 'address', 'whatsappAdmin', 'paymentAccountInfo',
+          'paymentBankName', 'paymentBankAccount', 'paymentBankHolder',
+          'qrisImageUrl', 'externalPaymentLink', 'defaultDueDay', 'totalRooms', 'updatedAt'
+        ])
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 80
+        && data.tagline is string && data.tagline.size() <= 140
+        && data.address is string && data.address.size() <= 200
+        && data.whatsappAdmin is string && data.whatsappAdmin.size() <= 30
+        && (!('paymentAccountInfo' in data) || (data.paymentAccountInfo is string && data.paymentAccountInfo.size() <= 240))
+        && (!('paymentBankName' in data) || (data.paymentBankName is string && data.paymentBankName.size() <= 50))
+        && (!('paymentBankAccount' in data) || (data.paymentBankAccount is string && data.paymentBankAccount.size() <= 60))
+        && (!('paymentBankHolder' in data) || (data.paymentBankHolder is string && data.paymentBankHolder.size() <= 80))
+        && (!('qrisImageUrl' in data) || (data.qrisImageUrl is string && data.qrisImageUrl.size() <= 450000))
+        && (!('externalPaymentLink' in data) || (data.externalPaymentLink is string && data.externalPaymentLink.size() <= 300))
+        && data.defaultDueDay is number && data.defaultDueDay >= 1 && data.defaultDueDay <= 28
+        && data.totalRooms is number && data.totalRooms >= 1 && data.totalRooms <= 200
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidReceiptTemplateConfig(data) {
+      return data.keys().hasAll([
+          'title', 'subtitle', 'accentTheme', 'includedItemsText',
+          'footerNote', 'signerLabel', 'showLogo', 'showAddress',
+          'showQrVerification', 'showDepositInfo', 'autoGeneratePdfOnPaid',
+          'autoOpenReceiptModalOnPaid', 'autoOpenWaOnPaid', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'title', 'subtitle', 'accentTheme', 'includedItemsText',
+          'footerNote', 'signerLabel', 'showLogo', 'showAddress',
+          'showQrVerification', 'showDepositInfo', 'autoGeneratePdfOnPaid',
+          'autoOpenReceiptModalOnPaid', 'autoOpenWaOnPaid', 'updatedAt'
+        ])
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 60
+        && data.subtitle is string && data.subtitle.size() <= 120
+        && data.accentTheme in ['teal', 'navy', 'slate']
+        && data.includedItemsText is string && data.includedItemsText.size() <= 200
+        && data.footerNote is string && data.footerNote.size() <= 300
+        && data.signerLabel is string && data.signerLabel.size() >= 1 && data.signerLabel.size() <= 60
+        && data.showLogo is bool
+        && data.showAddress is bool
+        && data.showQrVerification is bool
+        && data.showDepositInfo is bool
+        && data.autoGeneratePdfOnPaid is bool
+        && data.autoOpenReceiptModalOnPaid is bool
+        && data.autoOpenWaOnPaid is bool
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdminPreferences(data) {
+      return data.keys().hasAll(['adminName', 'adminInitials', 'theme', 'updatedAt'])
+        && data.keys().hasOnly(['adminName', 'adminInitials', 'theme', 'updatedAt'])
+        && data.adminName is string && data.adminName.size() >= 1 && data.adminName.size() <= 80
+        && data.adminInitials is string && data.adminInitials.size() >= 1 && data.adminInitials.size() <= 4
+        && data.theme in ['dark', 'light']
+        && data.updatedAt is timestamp;
+    }
+
+    // Collection: admins
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && (request.auth.uid == adminId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isVerifiedUser()
+        && request.auth.uid == adminId
+        && isValidId(adminId)
+        && isValidAdminUser(incoming())
+        && request.auth.token.email is string
+        && incoming().email == request.auth.token.email.lower()
+        && incoming().createdAt == request.time
+        && (
+          incoming().role == 'staff'
+          || request.auth.token.email.lower() == 'ekall2h@gmail.com'
+          || isInvitedAdmin()
+        );
+      allow update: if isAdmin()
+        && isValidId(adminId)
+        && isValidAdminUser(incoming())
+        && request.auth.uid != adminId
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'role']);
+      allow delete: if isAdmin() && isValidId(adminId) && request.auth.uid != adminId;
+    }
+
+    // Collection: adminInvites
+    match /adminInvites/{inviteEmail} {
+      allow get: if isSignedIn() && (
+        (request.auth.token.email is string && request.auth.token.email.lower() == inviteEmail)
+        || isAdmin()
+      );
+      allow list: if isAdmin();
+      allow create, update: if isAdmin()
+        && isValidEmailId(inviteEmail)
+        && isValidAdminInvite(incoming())
+        && incoming().email == inviteEmail
+        && incoming().createdAt == request.time;
+      allow delete: if isAdmin() && isValidEmailId(inviteEmail);
+    }
+
+    // Collection: roomTypes
+    match /roomTypes/{typeId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && typeId in ['tipe-a', 'tipe-b', 'tipe-c']
+        && isValidRoomTypeConfig(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && typeId in ['tipe-a', 'tipe-b', 'tipe-c']
+        && isValidRoomTypeConfig(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['tier', 'displayName', 'subtitle', 'monthlyRate', 'areaSqm', 'description', 'imageUrl', 'images', 'facilities', 'updatedAt']);
+      allow delete: if isAdmin() && typeId in ['tipe-a', 'tipe-b', 'tipe-c'];
+    }
+
+    // Collection: rooms
+    match /rooms/{roomId} {
+      allow get, list: if true;
+      allow create: if isAdmin()
+        && isValidId(roomId)
+        && isValidRoomUnit(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(roomId)
+        && isValidRoomUnit(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['number', 'name', 'floor', 'tier', 'monthlyRate', 'areaSqm', 'facilities', 'status', 'receiptProfile', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(roomId);
+    }
+
+    // Collection: tenants (isolated PII per room, strictly Admin only)
+    match /tenants/{roomId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidId(roomId)
+        && isValidTenantOccupancy(incoming())
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/rooms/$(roomId));
+      allow update: if isAdmin()
+        && isValidId(roomId)
+        && isValidTenantOccupancy(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['roomNumber', 'name', 'phone', 'institution', 'originCity', 'checkInDate', 'dueDay', 'emergencyContact', 'depositAmount', 'depositStatus', 'notes', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(roomId);
+    }
+
+    // Collection: tenantHistory (past tenants archive, strictly Admin only)
+    match /tenantHistory/{historyId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidId(historyId)
+        && isValidTenantHistory(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isAdmin() && isValidId(historyId);
+    }
+
+    // Collection: maintenanceLogs (room repair & maintenance records, strictly Admin only)
+    match /maintenanceLogs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidId(logId)
+        && isValidMaintenanceLog(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(logId)
+        && isValidMaintenanceLog(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'status', 'cost', 'reportedDate', 'notes', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(logId);
+    }
+
+    // Collection: payments (strictly Admin only)
+    match /payments/{paymentId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidId(paymentId)
+        && isValidPaymentRecord(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(paymentId)
+        && isValidPaymentRecord(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['invoiceNo', 'roomNumber', 'tenantName', 'month', 'amount', 'lateFee', 'paidDate', 'status', 'method', 'notes', 'paymentLinkId', 'receiptGeneratedAt', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(paymentId);
+    }
+
+    // Collection: paymentLinks (shareable Bank/QRIS checkout & PDF receipt link by exact token ID)
+    match /paymentLinks/{linkId} {
+      allow get: if isValidId(linkId);
+      allow list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidId(linkId)
+        && isValidPaymentLink(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(linkId)
+        && isValidPaymentLink(incoming())
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            existing().status == 'Belum Bayar'
+            && incoming().status == 'Menunggu Verifikasi'
+            && incoming().amount == existing().amount
+            && incoming().invoiceNo == existing().invoiceNo
+            && incoming().paymentId == existing().paymentId
+            && incoming().roomId == existing().roomId
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'confirmationMethod', 'confirmationNote', 'confirmedAt', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(linkId);
+    }
+
+    // Collection: expenses (strictly Admin only)
+    match /expenses/{expenseId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidId(expenseId)
+        && isValidExpenseRecord(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(expenseId)
+        && isValidExpenseRecord(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'amount', 'date', 'month', 'notes']);
+      allow delete: if isAdmin() && isValidId(expenseId);
+    }
+
+    // Collection: messageTemplates (Admin WhatsApp & Broadcast templates)
+    match /messageTemplates/{templateId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidId(templateId)
+        && isValidMessageTemplate(incoming())
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(templateId)
+        && isValidMessageTemplate(incoming())
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'body', 'updatedAt']);
+      allow delete: if isAdmin() && isValidId(templateId);
+    }
+
+    // Collection: applications
+    match /applications/{applicationId} {
+      allow get, list: if isAdmin();
+      allow create: if isValidId(applicationId)
+        && isValidTenantApplication(incoming())
+        && incoming().status == 'Menunggu'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/rooms/$(incoming().roomId))
+        && get(/databases/$(database)/documents/rooms/$(incoming().roomId)).data.status == 'Tersedia';
+      allow update: if isAdmin()
+        && isValidId(applicationId)
+        && isValidTenantApplication(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt', 'notes']);
+      allow delete: if isAdmin() && isValidId(applicationId);
+    }
+
+    // Settings documents
+    match /settings/property {
+      allow get: if true;
+      allow create, update: if isAdmin()
+        && isValidPropertySettingsPublic(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /settings/receipt {
+      allow get: if isAdmin();
+      allow create, update: if isAdmin()
+        && isValidReceiptTemplateConfig(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+
+    match /settings/admin {
+      allow get: if isAdmin();
+      allow create, update: if isAdmin()
+        && isValidAdminPreferences(incoming())
+        && incoming().updatedAt == request.time;
+      allow delete: if false;
+    }
+  }
+}

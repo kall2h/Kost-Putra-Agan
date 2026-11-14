@@ -1,0 +1,6 @@
+{
+  "name": "Kost Putra Agan — Manajemen Properti",
+  "description": "Platform manajemen properti eksklusif untuk pengelolaan kamar, penyewa, tagihan sewa, kwitansi digital, dan arus kas Kost Putra Agan.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
