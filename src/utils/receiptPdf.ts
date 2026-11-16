@@ -212,220 +212,205 @@ export async function generateReceiptPdfDocument(input: PdfReceiptInput): Promis
   });
 
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 18;
+  const margin = 20;
   const contentWidth = pageWidth - margin * 2;
   const [r, g, b] = ACCENT_RGB[input.template.accentTheme] ?? ACCENT_RGB.teal;
   const lateFee = input.lateFee ?? 0;
   const grandTotal = input.amount + lateFee;
 
-  // Top accent ribbon
+  // Minimal 3mm top accent stripe
   doc.setFillColor(r, g, b);
-  doc.rect(0, 0, pageWidth, 8, 'F');
+  doc.rect(0, 0, pageWidth, 3, 'F');
 
   let y = 20;
 
-  // Brand + Document Title
+  // 1. Header: Property Brand (left) + Receipt Title & Invoice No (right)
   if (input.template.showLogo) {
     doc.setFillColor(r, g, b);
-    doc.roundedRect(margin, y - 4, 11, 11, 2, 2, 'F');
+    doc.roundedRect(margin, y - 4, 10, 10, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('KPA', margin + 5.5, y + 3, { align: 'center' });
+    doc.setFontSize(9);
+    doc.text('KPA', margin + 5, y + 2.3, { align: 'center' });
   }
 
-  const brandOffset = input.template.showLogo ? margin + 15 : margin;
+  const brandOffset = input.template.showLogo ? margin + 14 : margin;
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(15);
-  doc.text(input.propertyName, brandOffset, y + 1);
+  doc.setFontSize(14);
+  doc.text(input.propertyName, brandOffset, y + 0.5);
 
   if (input.template.showAddress && input.propertyAddress) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(100, 116, 139);
     const addrLines = doc.splitTextToSize(input.propertyAddress, 85);
-    doc.text(addrLines, brandOffset, y + 6);
+    doc.text(addrLines, brandOffset, y + 5.5);
   }
 
-  // Right side Receipt Heading & Invoice No
   doc.setTextColor(r, g, b);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
+  doc.setFontSize(11);
   doc.text(input.template.title.toUpperCase(), pageWidth - margin, y, { align: 'right' });
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(100, 116, 139);
-  if (input.template.subtitle) {
-    doc.text(input.template.subtitle, pageWidth - margin, y + 5, { align: 'right' });
-  }
   doc.setFont('courier', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(input.invoiceNo, pageWidth - margin, y + 10.5, { align: 'right' });
+  doc.text(input.invoiceNo, pageWidth - margin, y + 5.5, { align: 'right' });
 
-  y += 22;
+  if (input.template.subtitle) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(input.template.subtitle, pageWidth - margin, y + 10.5, { align: 'right' });
+  }
 
-  // Divider
+  y += 20;
+
+  // Subtle hairline divider
   doc.setDrawColor(226, 232, 240);
-  doc.setLineWidth(0.4);
+  doc.setLineWidth(0.35);
   doc.line(margin, y, pageWidth - margin, y);
-  y += 9;
+  y += 10;
 
-  // 2-column Metadata Block
-  doc.setFillColor(248, 250, 252);
-  doc.roundedRect(margin, y - 4, contentWidth, 30, 2.5, 2.5, 'F');
+  // 2. Clean 2-Column Key Summary (no heavy shaded card)
+  const rightColX = pageWidth - margin;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text('DITERIMA DARI PENYEWA', margin + 5, y + 2);
-  doc.text('PERIODE & PEMBAYARAN', pageWidth - margin - 5, y + 2, { align: 'right' });
+  doc.text('Penyewa & Unit', margin, y);
+  doc.text('Periode & Tanggal Bayar', rightColX, y, { align: 'right' });
 
+  y += 5.5;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(11.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(input.tenantName, margin + 5, y + 8.5);
+  doc.text(input.tenantName, margin, y);
+  doc.text(formatMonthYear(input.month), rightColX, y, { align: 'right' });
 
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10.5);
-  doc.text(formatMonthYear(input.month), pageWidth - margin - 5, y + 8.5, {
-    align: 'right',
-  });
-
+  y += 5.5;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(71, 85, 105);
   const unitLabel = input.roomTier
     ? `${input.roomName} · ${input.roomTier}`
     : input.roomName;
-  doc.text(unitLabel, margin + 5, y + 14.5);
+  doc.text(unitLabel, margin, y);
   doc.text(
-    `Tanggal Bayar: ${formatDateID(input.paidDate)}`,
-    pageWidth - margin - 5,
-    y + 14.5,
-    { align: 'right' }
-  );
-  doc.text(
-    `Metode: ${input.method || 'Transfer Bank'}`,
-    pageWidth - margin - 5,
-    y + 20,
+    `${formatDateID(input.paidDate)} · ${input.method || 'Transfer Bank'}`,
+    rightColX,
+    y,
     { align: 'right' }
   );
 
-  y += 35;
+  y += 11;
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 9;
 
-  // Itemized Table Header
-  doc.setFillColor(r, g, b);
-  doc.rect(margin, y, contentWidth, 8.5, 'F');
-  doc.setTextColor(255, 255, 255);
+  // 3. Itemized Lines (clean typography, open whitespace)
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.text('RINCIAN TAGIHAN', margin + 4, y + 5.7);
-  doc.text('NOMINAL', pageWidth - margin - 4, y + 5.7, { align: 'right' });
-  y += 14;
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('RINCIAN PEMBAYARAN', margin, y);
+  doc.text('NOMINAL', rightColX, y, { align: 'right' });
+  y += 8;
 
-  // Row 1: Sewa Kamar
+  // Main Rent Line
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(15, 23, 42);
   doc.text(
     `Sewa ${input.roomName} (${formatMonthYear(input.month)})`,
-    margin + 4,
+    margin,
     y
   );
   doc.setFont('courier', 'bold');
-  doc.text(formatIDR(input.amount), pageWidth - margin - 4, y, { align: 'right' });
+  doc.text(formatIDR(input.amount), rightColX, y, { align: 'right' });
   y += 7.5;
 
-  // Row 2: Denda (if > 0)
+  // Late Fee (if > 0)
   if (lateFee > 0) {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(190, 18, 60);
-    doc.text('Denda Keterlambatan', margin + 4, y);
+    doc.text('Denda Keterlambatan', margin, y);
     doc.setFont('courier', 'bold');
-    doc.text(formatIDR(lateFee), pageWidth - margin - 4, y, { align: 'right' });
+    doc.text(formatIDR(lateFee), rightColX, y, { align: 'right' });
     y += 7.5;
   }
 
-  // Row 3: Included Facilities
+  // Included Facilities (quiet subline)
   if (input.template.includedItemsText.trim()) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(100, 116, 139);
     const incLines = doc.splitTextToSize(
       input.template.includedItemsText.trim(),
-      contentWidth - 45
+      contentWidth - 36
     );
-    doc.text(incLines, margin + 4, y);
-    doc.text('Termasuk', pageWidth - margin - 4, y, { align: 'right' });
+    doc.text(incLines, margin, y);
+    doc.text('Termasuk', rightColX, y, { align: 'right' });
     y += incLines.length * 4.5 + 3.5;
   }
 
-  // Row 4: Deposit info (optional)
+  // Deposit info (optional)
   if (
     input.template.showDepositInfo &&
     typeof input.depositAmount === 'number' &&
     input.depositAmount > 0
   ) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(71, 85, 105);
     doc.text(
-      `Status Uang Jaminan / Deposit (${input.depositStatus ?? 'Disimpan'})`,
-      margin + 4,
+      `Uang Jaminan / Deposit (${input.depositStatus ?? 'Disimpan'})`,
+      margin,
       y
     );
     doc.setFont('courier', 'normal');
-    doc.text(formatIDR(input.depositAmount), pageWidth - margin - 4, y, {
-      align: 'right',
-    });
+    doc.text(formatIDR(input.depositAmount), rightColX, y, { align: 'right' });
     y += 7;
   }
 
-  // Optional Room Custom Receipt Note / Payment Note
+  // Optional Note
   const combinedNotes = [input.customRoomNote, input.paymentNotes]
     .map((s) => s?.trim())
     .filter(Boolean)
     .join(' · ');
   if (combinedNotes) {
-    doc.setFont('helvetica', 'italic');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
-    doc.setTextColor(71, 85, 105);
-    const noteLines = doc.splitTextToSize(`Catatan: ${combinedNotes}`, contentWidth - 8);
-    doc.text(noteLines, margin + 4, y);
+    doc.setTextColor(100, 116, 139);
+    const noteLines = doc.splitTextToSize(`Catatan: ${combinedNotes}`, contentWidth);
+    doc.text(noteLines, margin, y);
     y += noteLines.length * 4.5 + 3;
   }
 
-  // Line before total
-  y += 2;
+  // 4. Total Highlight Band
+  y += 3;
   doc.setDrawColor(203, 213, 225);
   doc.line(margin, y, pageWidth - margin, y);
-  y += 9;
+  y += 10;
 
-  // Total & Paid Badge
-  doc.setFillColor(236, 253, 245);
-  doc.setDrawColor(16, 185, 129);
-  doc.roundedRect(margin, y - 5, 50, 9, 2, 2, 'FD');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
+  doc.setFontSize(9.5);
   doc.setTextColor(4, 120, 87);
-  doc.text('LUNAS · TERVERIFIKASI', margin + 25, y + 0.8, { align: 'center' });
+  doc.text('STATUS: LUNAS', margin, y + 1);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text('TOTAL DIBAYARKAN', pageWidth - margin, y - 1, { align: 'right' });
+  doc.text('Total Dibayarkan', rightColX, y - 2, { align: 'right' });
 
   doc.setFont('courier', 'bold');
   doc.setFontSize(17);
   doc.setTextColor(15, 23, 42);
-  doc.text(formatIDR(grandTotal), pageWidth - margin, y + 6.5, { align: 'right' });
+  doc.text(formatIDR(grandTotal), rightColX, y + 5.5, { align: 'right' });
 
-  y += 24;
+  y += 22;
 
-  // Footer: QR Verification + Signer
+  // 5. Verification QR + Signer
   const qrPayload = input.paymentLinkId
     ? buildShareablePaymentUrl(input.paymentLinkId)
     : `${input.invoiceNo} | ${input.tenantName} | LUNAS ${formatIDR(grandTotal)}`;
@@ -440,37 +425,40 @@ export async function generateReceiptPdfDocument(input: PdfReceiptInput): Promis
           light: '#ffffff',
         },
       });
-      doc.addImage(qrDataUrl, 'PNG', margin, y, 24, 24);
+      doc.addImage(qrDataUrl, 'PNG', margin, y, 20, 20);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(51, 65, 85);
+      doc.text('Cek Keaslian & Salinan PDF', margin + 23, y + 7);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(100, 116, 139);
-      doc.text('Verifikasi Kwitansi Digital', margin + 27, y + 8);
-      doc.setFont('courier', 'normal');
-      doc.setFontSize(7.5);
-      doc.text(input.invoiceNo, margin + 27, y + 13);
-      if (input.paymentLinkId) {
-        doc.setFont('helvetica', 'normal');
-        doc.text('Pindai QR untuk mengunduh salinan PDF resmi', margin + 27, y + 18);
-      }
+      doc.text(
+        input.paymentLinkId
+          ? 'Pindai QR untuk membuka kwitansi resmi'
+          : `Ref: ${input.invoiceNo}`,
+        margin + 23,
+        y + 12.5
+      );
     } catch {
       // Non-fatal if QR rendering fails
     }
   }
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(100, 116, 139);
-  doc.text(input.template.signerLabel, pageWidth - margin, y + 6, { align: 'right' });
+  doc.text(input.template.signerLabel, rightColX, y + 5, { align: 'right' });
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(input.adminName, pageWidth - margin, y + 17, { align: 'right' });
+  doc.text(input.adminName, rightColX, y + 15, { align: 'right' });
 
-  y += 32;
+  y += 28;
 
-  // Bottom Footer Note
+  // 6. Quiet Footer Note
   if (input.template.footerNote.trim()) {
-    doc.setDrawColor(226, 232, 240);
+    doc.setDrawColor(241, 245, 249);
     doc.line(margin, y, pageWidth - margin, y);
     y += 5.5;
     doc.setFont('helvetica', 'normal');

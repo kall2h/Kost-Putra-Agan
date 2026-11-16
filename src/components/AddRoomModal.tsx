@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BedDouble, X } from 'lucide-react';
 import { Room, RoomTier, RoomTypeConfig } from '../types/kost';
 import { DEFAULT_ROOM_TYPES } from '../data/initialData';
+import { CurrencyInput } from './CurrencyInput';
 
 interface AddRoomModalProps {
   open: boolean;
@@ -101,7 +102,7 @@ export const AddRoomModal: React.FC<AddRoomModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -109,9 +110,9 @@ export const AddRoomModal: React.FC<AddRoomModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-room-title"
-        className="relative z-10 w-full max-w-md rounded-2xl bg-gradient-to-b from-white to-[#F4FCFA] dark:from-[#0C1E22] dark:to-[#071418] border border-teal-900/[0.1] dark:border-teal-400/[0.16] shadow-xl overflow-hidden"
+        className="relative z-10 w-full max-w-md rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
       >
-        <div className="px-6 py-4 border-b border-teal-900/[0.08] dark:border-teal-400/[0.1] flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <BedDouble className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             <h2
@@ -205,13 +206,11 @@ export const AddRoomModal: React.FC<AddRoomModalProps> = ({
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                 Tarif / Bulan (Rp)
               </label>
-              <input
-                type="number"
-                min={0}
-                step={25000}
+              <CurrencyInput
                 value={monthlyRate}
-                onChange={(e) => setMonthlyRate(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg input-surface border font-mono-num text-sm"
+                onChange={setMonthlyRate}
+                aria-label="Tarif per Bulan (Rp)"
+                className="w-full pr-3 py-2 rounded-lg input-surface border font-mono-num text-sm"
               />
             </div>
             <div>

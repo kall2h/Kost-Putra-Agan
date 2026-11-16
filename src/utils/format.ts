@@ -1,7 +1,10 @@
 export function formatIDR(amount: number): string {
+  const safe = Number.isFinite(amount) ? amount : 0;
+  const hasDecimals = Math.abs(safe % 1) > 0.0001;
   const formatted = new Intl.NumberFormat('id-ID', {
-    maximumFractionDigits: 0,
-  }).format(Math.round(amount));
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: hasDecimals ? 2 : 0,
+  }).format(hasDecimals ? safe : Math.round(safe));
   return `Rp ${formatted}`;
 }
 

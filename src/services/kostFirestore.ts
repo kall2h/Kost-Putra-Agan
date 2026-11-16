@@ -45,7 +45,11 @@ import {
 import { buildInvoiceNumber, getCurrentMonthISO, getTodayISO } from '../utils/format';
 import { resolveRoomPaymentProfile } from '../utils/receiptPdf';
 
-const OWNER_EMAIL = 'ekall2h@gmail.com';
+const OWNER_EMAIL = (
+  import.meta.env.VITE_PRIMARY_OWNER_EMAIL || 'ekall2h@gmail.com'
+)
+  .trim()
+  .toLowerCase();
 
 function buildReceiptSnapshot(
   room: Room | null | undefined,
@@ -97,7 +101,7 @@ export async function checkIsAdminUser(
     if (normalized === OWNER_EMAIL) {
       await setDoc(doc(db, 'admins', uid), {
         email: normalized,
-        name: 'Azka Pratama',
+        name: 'Pemilik Utama',
         role: 'owner',
         createdAt: serverTimestamp(),
       });
@@ -146,6 +150,21 @@ export async function removeRegisteredAdminInCloud(uid: string): Promise<void> {
     await deleteDoc(doc(db, 'admins', uid));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `admins/${uid}`);
+  }
+}
+
+export async function updateAdminRoleInCloud(
+  uid: string,
+  name: string,
+  role: 'owner' | 'staff'
+): Promise<void> {
+  try {
+    await updateDoc(doc(db, 'admins', uid), {
+      name: name.trim().slice(0, 80),
+      role,
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `admins/${uid}`);
   }
 }
 
@@ -1143,14 +1162,16 @@ export async function deleteMessageTemplateInCloud(id: string): Promise<void> {
 export async function addAdminInviteInCloud(payload: {
   email: string;
   name: string;
+  role?: 'owner' | 'staff';
   addedBy: string;
 }): Promise<void> {
   const normalized = payload.email.trim().toLowerCase();
+  const role: 'owner' | 'staff' = payload.role === 'owner' ? 'owner' : 'staff';
   try {
     await setDoc(doc(db, 'adminInvites', normalized), {
       email: normalized,
       name: payload.name.trim().slice(0, 80),
-      role: 'staff',
+      role,
       addedBy: payload.addedBy.slice(0, 120),
       createdAt: serverTimestamp(),
     });

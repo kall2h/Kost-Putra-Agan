@@ -53,17 +53,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const occupancyPct = totalRooms > 0 ? Math.round((occupiedCount / totalRooms) * 100) : 0;
 
   const content = (
-    <div className="flex flex-col h-full bg-gradient-to-b from-white via-[#F5FCFA] to-[#ECF8F6] dark:from-[#071619] dark:via-[#081A1E] dark:to-[#051014] border-r border-teal-900/[0.08] dark:border-teal-400/[0.1] select-none">
+    <div className="flex flex-col h-full bg-white dark:bg-[#0c161a] border-r border-slate-200/80 dark:border-white/[0.08] select-none">
       {/* Brand Header */}
-      <div className="h-16 px-5 flex items-center justify-between border-b border-teal-900/[0.07] dark:border-teal-400/[0.08]">
+      <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200/70 dark:border-white/[0.07]">
         <div className="flex items-center gap-3 min-w-0">
           <PropertyLogo className="w-8 h-8 rounded-lg" />
           <div className="min-w-0">
             <p className="font-display font-semibold text-sm tracking-tight text-slate-900 dark:text-white truncate">
               {propertyName}
             </p>
-            <p className="text-[11px] text-teal-700/80 dark:text-teal-300/80 truncate">
-              Portal Pengelola Admin
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              Portal Pengelola
             </p>
           </div>
         </div>
@@ -78,7 +78,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 px-3 py-5 space-y-1.5 overflow-y-auto" aria-label="Menu Utama">
+      <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto" aria-label="Menu Utama">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activePage === item.id;
@@ -92,17 +92,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onSelectPage(item.id);
                 onCloseMobile();
               }}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 whitespace-nowrap ${
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 isActive
-                  ? 'nav-active-gradient text-white'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-teal-600/[0.08] dark:hover:bg-teal-400/[0.08] hover:text-slate-900 dark:hover:text-white'
+                  ? 'bg-teal-50 dark:bg-teal-500/15 text-teal-800 dark:text-teal-200'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <span className="flex items-center gap-3 min-w-0">
                 <Icon
                   className={`w-[18px] h-[18px] shrink-0 ${
                     isActive
-                      ? 'text-white'
+                      ? 'text-teal-700 dark:text-teal-300'
                       : 'text-slate-400 dark:text-slate-500'
                   }`}
                 />
@@ -112,8 +112,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <span
                   className={`font-mono-num text-xs font-semibold ${
                     isActive
-                      ? 'text-teal-100'
-                      : 'text-amber-600 dark:text-amber-400'
+                      ? 'text-teal-700 dark:text-teal-300'
+                      : 'text-rose-600 dark:text-rose-400'
                   }`}
                 >
                   {badgeCount}
@@ -125,17 +125,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Bottom Occupancy Summary & Account Logout */}
-      <div className="p-4 border-t border-teal-900/[0.07] dark:border-teal-400/[0.08] space-y-4">
-        <div className="p-3.5 rounded-xl bg-gradient-to-br from-teal-50/90 via-white/80 to-cyan-50/80 dark:from-teal-950/55 dark:via-[#0B2024] dark:to-cyan-950/35 border border-teal-600/15 dark:border-teal-400/15">
-          <div className="flex items-baseline justify-between mb-2">
-            <span className="text-xs font-medium text-slate-700 dark:text-slate-200">
+      <div className="p-5 border-t border-slate-200/70 dark:border-white/[0.07] space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-baseline justify-between">
+            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
               Okupansi Kamar
             </span>
-            <span className="font-mono-num text-xs font-semibold text-teal-700 dark:text-teal-300">
+            <span className="font-mono-num text-xs font-semibold text-slate-900 dark:text-white">
               {occupancyPct}%
             </span>
           </div>
-          <div className="w-full h-1.5 rounded-full bg-teal-950/10 dark:bg-white/[0.1] overflow-hidden mb-2">
+          <div className="w-full h-1.5 rounded-full bg-slate-200/80 dark:bg-white/[0.08] overflow-hidden">
             <div
               className="h-full rounded-full gradient-bar transition-all duration-300"
               style={{ width: `${occupancyPct}%` }}
@@ -146,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center justify-between gap-2 px-1">
+        <div className="pt-3 border-t border-slate-200/70 dark:border-white/[0.07] flex items-center justify-between gap-2">
           <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
             {userEmail ?? 'Admin Kos'}
           </span>
@@ -166,18 +166,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      <aside className="hidden lg:block w-[256px] shrink-0 h-screen sticky top-0">
+      <aside className="hidden lg:block w-[248px] shrink-0 h-screen sticky top-0">
         {content}
       </aside>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
             onClick={onCloseMobile}
             aria-hidden="true"
           />
-          <aside className="relative w-[264px] max-w-[80vw] h-full z-10">
+          <aside className="relative w-[264px] max-w-[80vw] h-full z-10 animate-drawer-left-in">
             {content}
           </aside>
         </div>

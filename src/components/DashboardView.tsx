@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ArrowUpRight,
   Building2,
   CheckCircle2,
+  ChevronRight,
   Copy,
   ExternalLink,
   MapPin,
@@ -10,6 +11,7 @@ import {
   Wifi,
   ShieldCheck,
   Wrench,
+  X,
 } from 'lucide-react';
 import {
   MaintenanceLog,
@@ -79,6 +81,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onEditRoomType,
 }) => {
   const [heroImgError, setHeroImgError] = useState(false);
+  const [selectedTypeId, setSelectedTypeId] = useState<RoomTypeConfig['id'] | null>(
+    null
+  );
+
+  useEffect(() => {
+    if (!selectedTypeId) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedTypeId(null);
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [selectedTypeId]);
 
   const monthPayments = payments.filter((p) => p.month === activeMonth);
   const paidMonth = monthPayments.filter((p) => p.status === 'Lunas');
@@ -105,6 +119,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     rooms.length > 0 ? Math.round((occupiedRooms.length / rooms.length) * 100) : 0;
 
   const activeRoomTypes = roomTypes.length > 0 ? roomTypes : DEFAULT_ROOM_TYPES;
+  const activeModalType = selectedTypeId
+    ? activeRoomTypes.find((rt) => rt.id === selectedTypeId) ?? null
+    : null;
   const activeTemplates =
     templates.length > 0 ? templates : DEFAULT_MESSAGE_TEMPLATES;
 
@@ -125,14 +142,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         key={room.id}
         type="button"
         onClick={() => onSelectRoom(room)}
-        className={`group text-left p-3.5 rounded-xl border transition-all duration-150 ${
-          isVacant
-            ? 'bg-gradient-to-br from-teal-50/90 to-emerald-50/50 dark:from-teal-500/[0.12] dark:to-emerald-500/[0.04] border-teal-300/80 dark:border-teal-400/30 hover:border-teal-500'
-            : isMaintenance
-            ? 'bg-gradient-to-br from-amber-50/90 to-orange-50/40 dark:from-amber-500/[0.12] dark:to-orange-500/[0.04] border-amber-300/80 dark:border-amber-400/30 hover:border-amber-500'
-            : isUnpaid
-            ? 'bg-gradient-to-br from-rose-50/90 to-orange-50/40 dark:from-rose-500/[0.12] dark:to-orange-500/[0.04] border-rose-200 dark:border-rose-400/30 hover:border-rose-400'
-            : 'bg-gradient-to-br from-white to-slate-50/80 dark:from-white/[0.04] dark:to-white/[0.01] border-teal-900/[0.08] dark:border-teal-400/[0.1] hover:border-teal-600/30 dark:hover:border-teal-400/30'
+        className={`group text-left p-3.5 rounded-lg border transition-colors ${
+          isUnpaid
+            ? 'bg-rose-50/40 dark:bg-rose-500/[0.06] border-rose-200/90 dark:border-rose-400/25 hover:border-rose-400'
+            : isVacant
+            ? 'bg-teal-50/35 dark:bg-teal-500/[0.06] border-teal-200/90 dark:border-teal-400/25 hover:border-teal-500'
+            : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200/90 dark:border-white/[0.08] hover:border-teal-500/50 dark:hover:border-teal-400/35'
         }`}
       >
         <div className="flex items-center justify-between gap-2">
@@ -147,7 +162,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 ? 'text-amber-700 dark:text-amber-300'
                 : isUnpaid
                 ? 'text-rose-600 dark:text-rose-400'
-                : 'text-emerald-600 dark:text-emerald-400'
+                : 'text-emerald-700 dark:text-emerald-400'
             }`}
           >
             {isVacant
@@ -173,19 +188,86 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Executive KPI Strip */}
+    <div className="space-y-5">
+      {/* Property Header Banner (Gambar Kost Putra Agan & Alamat) */}
+      <section
+        aria-label="Informasi Properti"
+        className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-hidden"
+      >
+        <div className="flex flex-col md:flex-row">
+          <div className="relative h-44 md:h-auto md:min-h-[160px] md:w-72 lg:w-80 shrink-0 bg-slate-900 overflow-hidden">
+            {!heroImgError ? (
+              <img
+                src={PROPERTY_EXTERIOR_IMG}
+                alt={`Tampak depan gedung ${settings.name}`}
+                referrerPolicy="no-referrer"
+                onError={() => setHeroImgError(true)}
+                className="md:absolute md:inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              <div className="md:absolute md:inset-0 w-full h-full flex flex-col items-center justify-center bg-teal-900 text-teal-100 p-6">
+                <Building2 className="w-9 h-9 mb-1.5" />
+                <p className="text-sm font-medium text-white text-center">{settings.name}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h1 className="font-display font-semibold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
+                  {settings.name}
+                </h1>
+                <p className="text-xs sm:text-sm text-teal-700 dark:text-teal-300 font-medium mt-0.5">
+                  {settings.tagline}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => onNavigate('settings')}
+                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors whitespace-nowrap"
+              >
+                <span>Edit Profil Properti</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-2.5 pt-3 border-t border-slate-200/70 dark:border-white/[0.07] text-xs text-slate-600 dark:text-slate-300">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">{settings.address}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-slate-500 dark:text-slate-400">
+                <span className="inline-flex items-center gap-1.5">
+                  <Wifi className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                  <span>WiFi 100 Mbps</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                  <span>CCTV &amp; Akses 24 Jam</span>
+                </span>
+                <span className="font-mono-num text-slate-600 dark:text-slate-300">
+                  Total {rooms.length} Unit Kamar
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Executive KPI Strip (4 Panel di Bawah Header) */}
       <section
         aria-label="Ringkasan Metrik Utama"
         className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"
       >
-        <div className="p-5 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
+        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Okupansi Properti</span>
             <button
               type="button"
               onClick={() => onNavigate('rooms')}
-              className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-300 inline-flex items-center gap-0.5 font-medium transition-colors"
+              className="text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 inline-flex items-center gap-0.5 font-medium transition-colors"
             >
               <span>Unit</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -206,13 +288,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
 
-        <div className="p-5 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
+        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Pemasukan ({formatMonthYear(activeMonth)})</span>
             <button
               type="button"
               onClick={() => onNavigate('payments')}
-              className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-300 inline-flex items-center gap-0.5 font-medium transition-colors"
+              className="text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 inline-flex items-center gap-0.5 font-medium transition-colors"
             >
               <span>Tagihan</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -222,20 +304,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             {formatIDR(totalIncomeMonth)}
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
-            <span className="font-mono-num text-emerald-600 dark:text-emerald-400 font-medium">
+            <span className="font-mono-num text-emerald-700 dark:text-emerald-400 font-medium">
               {paidMonth.length}
             </span>{' '}
             dari <span className="font-mono-num">{monthPayments.length}</span> kamar lunas
           </p>
         </div>
 
-        <div className="p-5 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
+        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Tagihan Belum Bayar</span>
             <button
               type="button"
               onClick={() => onNavigate('payments')}
-              className="text-slate-600 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-300 inline-flex items-center gap-0.5 font-medium transition-colors"
+              className="text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 inline-flex items-center gap-0.5 font-medium transition-colors"
             >
               <span>Lihat</span>
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -252,8 +334,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
 
-        {/* Highlighted Signature Gradient KPI Card */}
-        <div className="p-5 rounded-xl gradient-hero-card border border-teal-500/30">
+        {/* Signature Calm Gradient Focal KPI */}
+        <div className="p-5 rounded-xl gradient-hero-card border border-teal-800/20">
           <div className="flex items-center justify-between text-xs text-teal-100">
             <span>Laba Bersih ({formatMonthYear(activeMonth)})</span>
             <button
@@ -277,108 +359,79 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </section>
 
-      {/* Main Architectural Split */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        {/* Left 7 Cols: Panel Tipe Kamar */}
-        <section className="xl:col-span-7 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-5 sm:p-6 space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] pb-4">
-            <div>
-              <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
-                Panel Tipe &amp; Unit Kamar
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Kelola harga, foto, &amp; deskripsi tiap tipe kamar atau klik unit untuk detail
-              </p>
-            </div>
-            <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">Lunas</span>
-              <span aria-hidden="true">·</span>
-              <span className="text-rose-600 dark:text-rose-400 font-medium">Belum Bayar</span>
-              <span aria-hidden="true">·</span>
-              <span className="text-teal-700 dark:text-teal-300 font-medium">Kosong</span>
-            </div>
+      {/* Panel Tipe & Unit Kamar: 1 Panel Terpadu 3 Kolom Sejajar (Tipe A | Tipe B | Tipe C) */}
+      <section className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-hidden">
+        <div className="px-5 sm:px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.07] flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
+              Panel Tipe &amp; Unit Kamar
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Klik salah satu tipe kamar untuk melihat rincian fasilitas, foto, dan daftar unit kamar
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={() => onNavigate('rooms')}
+            className="text-xs font-medium text-teal-700 dark:text-teal-300 hover:text-teal-600 dark:hover:text-teal-200 inline-flex items-center gap-1 whitespace-nowrap transition-colors"
+          >
+            <span>Semua Kamar</span>
+            <ArrowUpRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
-          <div className="space-y-6">
-            {activeRoomTypes.map((rt) => {
-              const typeRooms = rooms.filter((r) => r.tier === rt.tier);
-              const occupiedCount = typeRooms.filter((r) => r.status === 'Terisi').length;
-              const panelName = rt.displayName?.trim() || rt.tier;
-              const galleryImages =
-                rt.images && rt.images.length > 0
-                  ? rt.images
-                  : [{ url: rt.imageUrl, label: panelName }];
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200/80 dark:divide-white/[0.07]">
+          {activeRoomTypes.map((rt) => {
+            const typeRooms = rooms.filter((r) => r.tier === rt.tier);
+            const panelName = rt.displayName?.trim() || rt.tier;
+            const coverUrl =
+              rt.images && rt.images.length > 0 ? rt.images[0].url : rt.imageUrl;
 
-              return (
-                <div
-                  key={rt.id}
-                  className="rounded-xl border border-teal-900/[0.08] dark:border-teal-400/[0.12] bg-white/50 dark:bg-white/[0.02] p-4 space-y-4"
-                >
-                  <div className="flex flex-col sm:flex-row gap-4 items-start">
-                    <RoomPhotoSlider
-                      images={galleryImages}
-                      title={panelName}
-                      className="w-full sm:w-52 aspect-[4/3] rounded-lg border border-teal-900/[0.1] dark:border-teal-400/[0.15] shrink-0"
-                      compactControls
-                    />
-
-                    <div className="flex-1 min-w-0 space-y-1.5">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-display font-semibold text-sm text-slate-900 dark:text-white tracking-wide">
-                              {panelName.toUpperCase()}
-                            </h3>
-                            <span className="text-xs text-slate-400 dark:text-slate-500">·</span>
-                            <span className="text-xs font-medium text-teal-700 dark:text-teal-300">
-                              {rt.subtitle}
-                            </span>
-                          </div>
-                          <p className="font-mono-num text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {formatIDR(rt.monthlyRate)}/bln · {rt.areaSqm} m² ·{' '}
-                            <span className="text-slate-800 dark:text-slate-200 font-medium">
-                              {occupiedCount}/{typeRooms.length} Terisi
-                            </span>
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => onEditRoomType(rt)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal-700/20 dark:border-teal-400/25 bg-gradient-to-r from-teal-50/90 to-emerald-50/70 dark:from-teal-500/10 dark:to-emerald-500/10 text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium transition-colors shrink-0"
-                        >
-                          <Pencil className="w-3 h-3" />
-                          <span>Edit Panel &amp; Galeri</span>
-                        </button>
-                      </div>
-
-                      <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">
-                        {rt.description}
-                      </p>
+            return (
+              <button
+                key={rt.id}
+                type="button"
+                onClick={() => setSelectedTypeId(rt.id)}
+                className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left group hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <img
+                    src={coverUrl}
+                    alt={panelName}
+                    referrerPolicy="no-referrer"
+                    className="w-12 h-11 rounded-lg object-cover border border-slate-200/80 dark:border-white/[0.08] shrink-0 bg-slate-100 dark:bg-slate-800"
+                  />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <h3 className="font-display font-semibold text-sm text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors truncate">
+                        {panelName}
+                      </h3>
+                      <span className="text-xs text-slate-300 dark:text-slate-600">·</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        {rt.subtitle}
+                      </span>
                     </div>
-                  </div>
-
-                  {typeRooms.length === 0 ? (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 py-2">
-                      Belum ada unit kamar pada {panelName}. Anda dapat memindahkan unit melalui
-                      detail kamar.
+                    <p className="font-mono-num text-xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      {formatIDR(rt.monthlyRate)}/bln · {rt.areaSqm} m² ·{' '}
+                      <span className="text-slate-700 dark:text-slate-300 font-medium">
+                        {typeRooms.length} unit
+                      </span>
                     </p>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      {typeRooms.map(renderRoomTile)}
-                    </div>
-                  )}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </section>
 
-        {/* Right 5 Cols: Prioritas Penagihan + Maintenance Alert + Property Spotlight */}
-        <div className="xl:col-span-5 space-y-6">
-          {/* Prioritas Tagihan */}
-          <section className="rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-5 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] pb-3">
+                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-700 dark:group-hover:text-teal-300 group-hover:translate-x-0.5 shrink-0 transition-all" />
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Baris Bawah Sejajar: Perlu Tindak Lanjut & Tren Arus Kas (Equal Height) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
+        <section className="xl:col-span-6 h-full rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between gap-4">
+          <div className="space-y-4 flex-1 flex flex-col">
+            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
               <div>
                 <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
                   Perlu Tindak Lanjut
@@ -387,13 +440,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   Tagihan sewa {formatMonthYear(activeMonth)} yang belum lunas
                 </p>
               </div>
-              <span className="font-mono-num text-xs font-medium text-rose-600 dark:text-rose-400">
+              <span className="font-mono-num text-xs font-semibold text-rose-600 dark:text-rose-400">
                 {unpaidMonth.length} Tagihan
               </span>
             </div>
 
             {unpaidMonth.length === 0 ? (
-              <div className="py-6 text-center space-y-2">
+              <div className="flex-1 py-6 flex flex-col items-center justify-center text-center space-y-2">
                 <CheckCircle2 className="w-8 h-8 text-teal-600 dark:text-teal-400 mx-auto" />
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
                   Seluruh Tagihan {formatMonthYear(activeMonth)} Lunas
@@ -403,7 +456,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-teal-900/[0.06] dark:divide-white/[0.06]">
+              <div className="divide-y divide-slate-200/70 dark:divide-white/[0.06]">
                 {unpaidMonth.map((pay) => {
                   const roomObj = rooms.find((r) => r.number === pay.roomNumber);
                   const total = pay.amount + (pay.lateFee ?? 0);
@@ -431,7 +484,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   return (
                     <div
                       key={pay.id}
-                      className="py-3.5 first:pt-1 last:pb-1 flex flex-wrap items-center justify-between gap-3"
+                      className="py-3 first:pt-0.5 last:pb-0.5 flex flex-wrap items-center justify-between gap-3"
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
@@ -465,7 +518,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                             <button
                               type="button"
                               onClick={() => onCopyReminder(roomObj, total, pay)}
-                              className="p-2 rounded-lg border border-teal-900/10 dark:border-teal-400/15 text-slate-600 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-white/[0.05] transition-colors"
+                              className="p-2 rounded-lg border border-slate-200 dark:border-white/[0.12] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.05] transition-colors"
                               title="Salin pesan pengingat WhatsApp"
                               aria-label={`Salin pengingat WhatsApp untuk ${pay.tenantName}`}
                             >
@@ -476,7 +529,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                                 href={waUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 rounded-lg border border-teal-700/20 dark:border-teal-400/25 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-500/10 transition-colors"
+                                className="p-2 rounded-lg border border-slate-200 dark:border-white/[0.12] text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-500/10 transition-colors"
                                 title="Kirim langsung via WhatsApp"
                               >
                                 <ExternalLink className="w-3.5 h-3.5" />
@@ -487,7 +540,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         <button
                           type="button"
                           onClick={() => onMarkPaid(pay.id)}
-                          className="px-3 py-1.5 rounded-lg btn-primary text-xs font-medium transition-all whitespace-nowrap"
+                          className="px-3 py-1.5 rounded-lg btn-primary text-xs font-medium transition-colors whitespace-nowrap"
                         >
                           Tandai Lunas
                         </button>
@@ -497,125 +550,233 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 })}
               </div>
             )}
+          </div>
 
-            {/* Open Maintenance Summary */}
-            {openMaintenance.length > 0 && (
-              <div className="pt-3 border-t border-teal-900/[0.07] dark:border-teal-400/[0.1] space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="inline-flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-300">
-                    <Wrench className="w-3.5 h-3.5" />
-                    <span>Perawatan Aktif ({openMaintenance.length})</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onNavigate('rooms')}
-                    className="text-teal-700 dark:text-teal-300 font-medium hover:underline"
-                  >
-                    Kelola Unit
-                  </button>
-                </div>
-                <div className="space-y-1">
-                  {openMaintenance.slice(0, 3).map((m) => (
-                    <p
-                      key={m.id}
-                      className="text-xs text-slate-600 dark:text-slate-300 truncate"
+          {(openMaintenance.length > 0 || availableRooms.length > 0) && (
+            <div className="space-y-3 pt-3 border-t border-slate-200/80 dark:border-white/[0.07]">
+              {openMaintenance.length > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="inline-flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-300">
+                      <Wrench className="w-3.5 h-3.5" />
+                      <span>Perawatan Aktif ({openMaintenance.length})</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigate('rooms')}
+                      className="text-teal-700 dark:text-teal-300 font-medium hover:underline"
                     >
-                      • Kamar {m.roomNumber}: {m.title} ({m.status})
-                    </p>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Quick Vacant Room Invite */}
-            {availableRooms.length > 0 && (
-              <div className="pt-3 border-t border-teal-900/[0.07] dark:border-teal-400/[0.1] flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200">
-                    Kamar Tersedia: {availableRooms.map((r) => getRoomDisplayName(r)).join(', ')}
-                  </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Siap untuk ditempati penyewa baru
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onOpenCheckIn(availableRooms[0].number)}
-                  className="px-3 py-1.5 rounded-lg border border-teal-700/25 dark:border-teal-400/25 bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-500/10 dark:to-emerald-500/10 text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium whitespace-nowrap shrink-0 transition-colors"
-                >
-                  Check-In
-                </button>
-              </div>
-            )}
-          </section>
-
-          {/* Property Architectural Spotlight */}
-          <section className="rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] overflow-hidden">
-            <div className="relative h-44 w-full bg-gradient-to-br from-[#06383B] to-[#0D9488]">
-              {!heroImgError ? (
-                <img
-                  src={PROPERTY_EXTERIOR_IMG}
-                  alt="Tampak depan gedung modern Kost Putra Agan"
-                  referrerPolicy="no-referrer"
-                  onError={() => setHeroImgError(true)}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-teal-100">
-                  <Building2 className="w-10 h-10 mb-2" />
-                  <p className="text-sm font-medium text-white">{settings.name}</p>
+                      Kelola Unit
+                    </button>
+                  </div>
+                  <div className="space-y-1">
+                    {openMaintenance.slice(0, 2).map((m) => (
+                      <p
+                        key={m.id}
+                        className="text-xs text-slate-600 dark:text-slate-300 truncate"
+                      >
+                        • Kamar {m.roomNumber}: {m.title} ({m.status})
+                      </p>
+                    ))}
+                  </div>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#04181A]/90 via-[#072B2E]/40 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                <p className="font-display font-semibold text-base">{settings.name}</p>
-                <p className="text-xs text-teal-100 mt-0.5">{settings.tagline}</p>
-              </div>
-            </div>
 
-            <div className="p-4 space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
-              <div className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
-                <span>{settings.address}</span>
-              </div>
-              <div className="flex items-center gap-4 pt-1 text-slate-500 dark:text-slate-400">
-                <span className="inline-flex items-center gap-1.5">
-                  <Wifi className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                  WiFi 100 Mbps
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                  CCTV &amp; Akses 24 Jam
-                </span>
-              </div>
+              {availableRooms.length > 0 && (
+                <div
+                  className={`flex items-center justify-between gap-3 ${
+                    openMaintenance.length > 0
+                      ? 'pt-2.5 border-t border-slate-200/70 dark:border-white/[0.06]'
+                      : ''
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+                      Kamar Tersedia: {availableRooms.map((r) => getRoomDisplayName(r)).join(', ')}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Siap untuk ditempati penyewa baru
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onOpenCheckIn(availableRooms[0].number)}
+                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] text-teal-700 dark:text-teal-300 hover:border-teal-600 text-xs font-medium whitespace-nowrap shrink-0 transition-colors"
+                  >
+                    Check-In
+                  </button>
+                </div>
+              )}
             </div>
-          </section>
-        </div>
+          )}
+        </section>
+
+        <section className="xl:col-span-6 h-full rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
+            <div>
+              <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
+                Tren Arus Kas 6 Bulan Terakhir
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Perbandingan realisasi pemasukan sewa terhadap beban operasional
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('finance')}
+              className="text-xs font-medium text-teal-700 dark:text-teal-300 hover:text-teal-600 dark:hover:text-teal-200 inline-flex items-center gap-1 whitespace-nowrap transition-colors"
+            >
+              <span>Buka Rincian</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="my-auto">
+            <CashflowTrendChart
+              data={cashflowHistory}
+              height={220}
+              activeMonth={activeMonth}
+            />
+          </div>
+        </section>
       </div>
 
-      {/* Bottom 6-Month Cashflow Overview */}
-      <section className="rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-5 sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <div>
-            <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
-              Tren Arus Kas 6 Bulan Terakhir
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Perbandingan realisasi pemasukan sewa terhadap beban operasional
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('finance')}
-            className="text-xs font-medium text-teal-700 dark:text-teal-300 hover:text-teal-600 dark:hover:text-teal-200 inline-flex items-center gap-1 whitespace-nowrap transition-colors"
-          >
-            <span>Buka Rincian Keuangan</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
+      {/* Pop-Up Detail Tipe & Unit Kamar */}
+      {activeModalType && (() => {
+        const typeRooms = rooms.filter((r) => r.tier === activeModalType.tier);
+        const occupiedCount = typeRooms.filter((r) => r.status === 'Terisi').length;
+        const panelName = activeModalType.displayName?.trim() || activeModalType.tier;
+        const galleryImages =
+          activeModalType.images && activeModalType.images.length > 0
+            ? activeModalType.images
+            : [{ url: activeModalType.imageUrl, label: panelName }];
 
-        <CashflowTrendChart data={cashflowHistory} height={220} />
-      </section>
+        return (
+          <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
+              onClick={() => setSelectedTypeId(null)}
+              aria-hidden="true"
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Informasi ${panelName}`}
+              className="relative z-10 w-full max-w-3xl max-h-[88vh] rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl flex flex-col overflow-hidden animate-modal-in"
+            >
+              {/* Pop-up Header */}
+              <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-display font-semibold text-base sm:text-lg text-slate-900 dark:text-white truncate">
+                      {panelName}
+                    </h2>
+                    <span className="text-xs text-slate-300 dark:text-slate-600">·</span>
+                    <span className="text-xs font-medium text-teal-700 dark:text-teal-300 truncate">
+                      {activeModalType.subtitle}
+                    </span>
+                  </div>
+                  <p className="font-mono-num text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    {formatIDR(activeModalType.monthlyRate)}/bln · {activeModalType.areaSqm} m² ·{' '}
+                    <span className="text-slate-800 dark:text-slate-200 font-medium">
+                      {occupiedCount}/{typeRooms.length} Terisi
+                    </span>
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onEditRoomType(activeModalType)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition-colors whitespace-nowrap"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    <span>Edit Panel</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTypeId(null)}
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
+                    aria-label="Tutup pop-up tipe kamar"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Pop-up Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+                  <div className="md:col-span-6">
+                    <RoomPhotoSlider
+                      images={galleryImages}
+                      title={panelName}
+                      className="w-full aspect-[4/3] rounded-xl border border-slate-200/90 dark:border-white/[0.08]"
+                    />
+                  </div>
+                  <div className="md:col-span-6 space-y-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+                        Deskripsi Tipe Kamar
+                      </p>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        {activeModalType.description}
+                      </p>
+                    </div>
+                    {activeModalType.facilities.length > 0 && (
+                      <div className="pt-2 border-t border-slate-200/70 dark:border-white/[0.07]">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+                          Fasilitas Standar
+                        </p>
+                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                          {activeModalType.facilities.join(' · ')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Daftar Unit Kamar di Tipe Ini */}
+                <div className="pt-5 border-t border-slate-200/80 dark:border-white/[0.08] space-y-3.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h3 className="font-display font-semibold text-sm text-slate-900 dark:text-white">
+                        Daftar Unit Kamar ({typeRooms.length})
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        Klik unit kamar untuk lihat detail penyewa, kwitansi, atau tindak lanjut tagihan
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <span className="text-emerald-700 dark:text-emerald-400 font-medium">
+                        Lunas
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span className="text-rose-600 dark:text-rose-400 font-medium">
+                        Belum Bayar
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span className="text-teal-700 dark:text-teal-300 font-medium">
+                        Kosong
+                      </span>
+                    </div>
+                  </div>
+
+                  {typeRooms.length === 0 ? (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 py-4 text-center border border-dashed border-slate-200 dark:border-white/[0.1] rounded-xl">
+                      Belum ada unit kamar pada {panelName}.
+                    </p>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {typeRooms.map(renderRoomTile)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

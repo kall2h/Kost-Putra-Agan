@@ -13,6 +13,7 @@ import {
 import { RoomGalleryImage, RoomTypeConfig } from '../types/kost';
 import { DEFAULT_ROOM_TYPES } from '../data/initialData';
 import { RoomPhotoSlider } from './RoomPhotoSlider';
+import { CurrencyInput } from './CurrencyInput';
 
 interface RoomTypeModalProps {
   roomType: RoomTypeConfig | null;
@@ -271,7 +272,7 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/55 backdrop-blur-xs"
+        className="fixed inset-0 bg-black/55 backdrop-blur-xs animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -279,9 +280,9 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="room-type-modal-title"
-        className="relative z-10 w-full max-w-2xl rounded-2xl bg-gradient-to-b from-white to-[#F4FCFA] dark:from-[#0C1E22] dark:to-[#071418] border border-teal-900/[0.1] dark:border-teal-400/[0.16] shadow-xl overflow-hidden"
+        className="relative z-10 w-full max-w-2xl rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
       >
-        <div className="px-6 py-4 border-b border-teal-900/[0.08] dark:border-teal-400/[0.1] flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <SlidersHorizontal className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             <div>
@@ -349,7 +350,7 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
             </div>
 
             {/* Live Slider Preview */}
-            <div className="rounded-xl overflow-hidden border border-teal-900/[0.1] dark:border-teal-400/[0.15]">
+            <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-white/[0.08]">
               <RoomPhotoSlider
                 images={images}
                 title={displayName || roomType.tier}
@@ -363,7 +364,7 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
               {images.map((item, idx) => (
                 <div
                   key={`${idx}-${item.url.slice(0, 24)}`}
-                  className="p-2.5 rounded-xl bg-white/75 dark:bg-[#081417] border border-teal-900/[0.08] dark:border-teal-400/[0.12] flex items-center gap-2.5"
+                  className="p-2.5 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] flex items-center gap-2.5"
                 >
                   <img
                     src={item.url}
@@ -483,15 +484,12 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                 Tarif / Bln *
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 required
-                min={0}
-                max={50000000}
-                step={25000}
                 value={monthlyRate}
-                onChange={(e) => setMonthlyRate(Number(e.target.value))}
-                className="w-full px-2.5 py-2 rounded-lg input-surface border font-mono-num text-sm"
+                onChange={setMonthlyRate}
+                aria-label="Tarif per Bulan"
+                className="w-full pr-2.5 py-2 rounded-lg input-surface border font-mono-num text-sm"
               />
             </div>
 
@@ -546,7 +544,7 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
           </div>
 
           {/* Sync toggle */}
-          <label className="flex items-start gap-3 p-3.5 rounded-xl bg-teal-50/70 dark:bg-teal-500/[0.08] border border-teal-700/15 dark:border-teal-400/20 cursor-pointer">
+          <label className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] cursor-pointer">
             <input
               type="checkbox"
               checked={syncToRooms}
@@ -563,7 +561,7 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
             </div>
           </label>
 
-          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-teal-900/[0.08] dark:border-teal-400/[0.1]">
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200/80 dark:border-white/[0.08]">
             <button
               type="button"
               onClick={onClose}

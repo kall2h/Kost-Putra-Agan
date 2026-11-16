@@ -1,10 +1,27 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { doc, getDocFromServer, getFirestore } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
+import fallbackAppletConfig from '../firebase-applet-config.json';
+
+const env = import.meta.env;
+
+const firebaseConfig = {
+  apiKey: env.VITE_FIREBASE_API_KEY || fallbackAppletConfig.apiKey,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || fallbackAppletConfig.authDomain,
+  projectId: env.VITE_FIREBASE_PROJECT_ID || fallbackAppletConfig.projectId,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || fallbackAppletConfig.storageBucket,
+  messagingSenderId:
+    env.VITE_FIREBASE_MESSAGING_SENDER_ID || fallbackAppletConfig.messagingSenderId,
+  appId: env.VITE_FIREBASE_APP_ID || fallbackAppletConfig.appId,
+};
+
+const firestoreDatabaseId =
+  env.VITE_FIREBASE_DATABASE_ID || fallbackAppletConfig.firestoreDatabaseId;
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = firestoreDatabaseId
+  ? getFirestore(app, firestoreDatabaseId)
+  : getFirestore(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
@@ -67,7 +84,7 @@ export async function testFirestoreConnection(): Promise<boolean> {
     return true;
   } catch (error) {
     if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Please check your Firebase configuration.');
+      console.error('Silakan periksa konfigurasi Firebase Anda.');
       return false;
     }
     return true;

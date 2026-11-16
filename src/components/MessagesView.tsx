@@ -28,6 +28,7 @@ import {
   renderMessageTemplate,
   TEMPLATE_VARIABLES,
 } from '../utils/messageTemplates';
+import { buildExcelCsv, downloadCsvFile } from '../utils/csv';
 
 interface MessagesViewProps {
   templates: MessageTemplate[];
@@ -294,32 +295,30 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
   };
 
   const handleExportBatchCsv = () => {
-    const escapeCsv = (val: string) => `"${val.replace(/"/g, '""')}"`;
-    const header = 'Kamar,Penyewa,No_WhatsApp,Nominal,Pesan_Siap_Kirim,Link_WhatsApp\n';
+    const headers = [
+      'Kamar',
+      'Penyewa',
+      'No_WhatsApp',
+      'Nominal_Rp',
+      'Pesan_Siap_Kirim',
+      'Link_WhatsApp',
+    ];
     const rows = batchItems.map((item) => {
       const total =
         (item.payment?.amount ?? item.room.monthlyRate) +
         (item.payment?.lateFee ?? 0);
       return [
-        escapeCsv(getRoomDisplayName(item.room)),
-        escapeCsv(item.room.tenant?.name ?? '-'),
-        escapeCsv(item.phone),
-        String(total),
-        escapeCsv(item.text),
-        escapeCsv(item.waUrl),
-      ].join(',');
+        getRoomDisplayName(item.room),
+        item.room.tenant?.name ?? '-',
+        item.phone,
+        total,
+        item.text,
+        item.waUrl,
+      ];
     });
-    const csv = header + rows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `broadcast-wa-${selectedMonth}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    onNotify('Daftar pesan & link WhatsApp berhasil diekspor (CSV)');
+    const csv = buildExcelCsv(headers, rows);
+    downloadCsvFile(csv, `broadcast-wa-${selectedMonth}.csv`);
+    onNotify('Daftar pesan & link WhatsApp berhasil diekspor (CSV siap buka di Excel)');
   };
 
   const singleWaPhone =
@@ -330,7 +329,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     <div className="space-y-6">
       {/* Top Template Selector Strip */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1 p-1 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
           {activeTemplates.map((tpl) => {
             const active = tpl.id === selectedId;
             return (
@@ -338,10 +337,10 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 key={tpl.id}
                 type="button"
                 onClick={() => setSelectedId(tpl.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-medium border transition-all whitespace-nowrap ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
                   active
-                    ? 'nav-active-gradient border-transparent text-white'
-                    : 'surface-card border-teal-900/[0.08] dark:border-teal-400/[0.12] text-slate-700 dark:text-slate-200 hover:border-teal-500/40'
+                    ? 'nav-active-gradient text-white'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
                 }`}
               >
                 {tpl.name}
@@ -353,7 +352,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
         <button
           type="button"
           onClick={handleCreateNewTemplate}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-teal-700/20 dark:border-teal-400/25 bg-gradient-to-r from-teal-50/90 to-emerald-50/70 dark:from-teal-500/10 dark:to-emerald-500/10 text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium transition-colors whitespace-nowrap"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg surface-card border border-slate-200/90 dark:border-white/[0.12] text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition-colors whitespace-nowrap"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>Tambah Template Kustom</span>
@@ -361,13 +360,13 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
       </div>
 
       {/* Main Split: Editor (7 cols) + Live Preview & Export/Forward WA (5 cols) */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
         {/* Left 7 cols: Template Modifier */}
         <form
           onSubmit={handleSave}
-          className="xl:col-span-7 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-5 sm:p-6 space-y-5"
+          className="xl:col-span-7 h-full rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between gap-5"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
             <div className="flex items-center gap-2">
               <MessageSquareText className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               <div>
@@ -448,7 +447,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   type="button"
                   onClick={() => handleInsertVariable(v.key)}
                   title={`Contoh hasil: ${v.example}`}
-                  className="px-2.5 py-1 rounded-md border border-teal-700/20 dark:border-teal-400/20 bg-teal-50/70 dark:bg-teal-500/[0.08] text-[11px] font-mono-num font-medium text-teal-800 dark:text-teal-200 hover:border-teal-600 transition-colors"
+                  className="px-2.5 py-1 rounded-md border border-slate-200 dark:border-white/[0.12] bg-slate-50 dark:bg-white/[0.04] text-[11px] font-mono-num font-medium text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
                 >
                   {v.key}
                 </button>
@@ -472,18 +471,21 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               maxLength={2500}
               value={bodyInput}
               onChange={(e) => setBodyInput(e.target.value)}
-              className="w-full px-3.5 py-3 rounded-xl input-surface border text-sm leading-relaxed font-sans"
+              className="w-full px-3.5 py-3 rounded-lg input-surface border text-sm leading-relaxed font-sans"
             />
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-teal-900/[0.07] dark:border-teal-400/[0.1]">
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200/80 dark:border-white/[0.07]">
             <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-md">
-              Info rekening aktif: <span className="font-medium text-slate-700 dark:text-slate-200">{settings.paymentAccountInfo || 'Belum diatur'}</span>
+              Info rekening aktif:{' '}
+              <span className="font-medium text-slate-700 dark:text-slate-200">
+                {settings.paymentAccountInfo || 'Belum diatur'}
+              </span>
             </p>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg btn-primary text-sm font-medium transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg btn-primary text-sm font-medium transition-colors"
             >
               <Save className="w-4 h-4" />
               <span>{saving ? 'Menyimpan...' : 'Simpan Template'}</span>
@@ -492,8 +494,8 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
         </form>
 
         {/* Right 5 cols: Preview, Export & Teruskan ke WhatsApp */}
-        <section className="xl:col-span-5 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-5 sm:p-6 space-y-5">
-          <div className="flex items-center justify-between gap-2 border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] pb-3">
+        <section className="xl:col-span-5 h-full rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between gap-5">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
             <div>
               <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
                 Preview &amp; Teruskan ke WhatsApp
@@ -503,11 +505,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100/90 dark:bg-white/[0.05] border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/[0.08]">
               <button
                 type="button"
                 onClick={() => setSendMode('single')}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   sendMode === 'single'
                     ? 'nav-active-gradient text-white'
                     : 'text-slate-600 dark:text-slate-300'
@@ -518,7 +520,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
               <button
                 type="button"
                 onClick={() => setSendMode('batch')}
-                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                   sendMode === 'batch'
                     ? 'nav-active-gradient text-white'
                     : 'text-slate-600 dark:text-slate-300'
@@ -611,7 +613,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                     setCustomPreviewText(e.target.value);
                     setIsManualEdited(true);
                   }}
-                  className="w-full px-3.5 py-3 rounded-xl bg-gradient-to-br from-emerald-50/70 to-teal-50/40 dark:from-[#061A1E] dark:to-[#041216] border border-teal-700/20 dark:border-teal-400/20 text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed focus:outline-none focus:border-teal-600"
+                  className="w-full px-3.5 py-3 rounded-lg bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.1] text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed focus:outline-none focus:border-teal-600"
                 />
                 {targetRoom?.tenant && categoryInput !== 'promo' && (
                   <p className="font-mono-num text-[11px] text-slate-500 dark:text-slate-400">
@@ -624,7 +626,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                 <button
                   type="button"
                   onClick={() => handleCopyText(activePreviewText)}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-teal-900/15 dark:border-teal-400/20 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-teal-50 dark:hover:bg-white/[0.06] transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-colors"
                 >
                   <Copy className="w-3.5 h-3.5" />
                   <span>Salin Teks</span>
@@ -638,7 +640,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                       `pesan-${targetRoom?.number ?? 'kos'}-${selectedMonth}.txt`
                     )
                   }
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-teal-900/15 dark:border-teal-400/20 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-teal-50 dark:hover:bg-white/[0.06] transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-colors"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Ekspor .TXT</span>
@@ -648,7 +650,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   href={singleWaUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg btn-primary text-xs font-medium transition-all"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg btn-primary text-xs font-medium transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Buka WhatsApp</span>
@@ -671,7 +673,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   type="button"
                   disabled={batchItems.length === 0}
                   onClick={handleExportBatchCsv}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-teal-700/20 dark:border-teal-400/25 text-xs font-medium text-teal-800 dark:text-teal-200 hover:bg-teal-50 dark:hover:bg-white/[0.06] disabled:opacity-50"
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06] disabled:opacity-50"
                 >
                   <FileSpreadsheet className="w-3.5 h-3.5" />
                   <span>Ekspor CSV + Link WA</span>
@@ -683,7 +685,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                   Tidak ada penerima untuk filter ini pada periode {formatMonthYear(selectedMonth)}.
                 </p>
               ) : (
-                <div className="max-h-[340px] overflow-y-auto divide-y divide-teal-900/[0.06] dark:divide-white/[0.06] border border-teal-900/[0.08] dark:border-teal-400/[0.12] rounded-xl bg-white/60 dark:bg-[#081417]">
+                <div className="max-h-[340px] overflow-y-auto divide-y divide-slate-200/70 dark:divide-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] rounded-lg">
                   {batchItems.map((item) => {
                     const total =
                       (item.payment?.amount ?? item.room.monthlyRate) +
@@ -710,7 +712,7 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
                                 `Pesan ${item.room.tenant?.name ?? item.room.number}`
                               )
                             }
-                            className="p-1.5 rounded-lg border border-teal-900/10 dark:border-teal-400/15 text-slate-600 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-white/[0.06]"
+                            className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.06]"
                             title="Salin pesan"
                           >
                             <Copy className="w-3.5 h-3.5" />

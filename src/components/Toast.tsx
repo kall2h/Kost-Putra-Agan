@@ -13,7 +13,7 @@ export const Toast: React.FC<ToastProps> = ({ message, onDismiss }) => {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-[#062E31] to-[#0B4A4D] text-white border border-teal-400/25 shadow-lg max-w-sm"
+      className="fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-900 dark:bg-[#0f1a1e] text-white border border-slate-700/80 dark:border-white/[0.12] shadow-lg max-w-sm animate-toast-in"
     >
       <CheckCircle2 className="w-4 h-4 text-teal-400 shrink-0" />
       <p className="text-sm font-medium text-slate-100 leading-snug">{message}</p>

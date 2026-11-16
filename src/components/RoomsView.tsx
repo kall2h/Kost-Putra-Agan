@@ -107,8 +107,8 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Editable Room Type Panels with Google-Review Style Photo Slider */}
+    <div className="space-y-5">
+      {/* Editable Room Type Panels with Photo Slider */}
       <section aria-label="Panel Tipe Kamar" className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {activeRoomTypes.map((rt) => {
           const typeFilterId: RoomFilter =
@@ -125,10 +125,10 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
           return (
             <div
               key={rt.id}
-              className={`rounded-xl surface-card border overflow-hidden flex flex-col transition-all ${
+              className={`rounded-xl surface-card border overflow-hidden flex flex-col transition-colors ${
                 isSelected
-                  ? 'border-teal-600 dark:border-teal-400 ring-1 ring-teal-500/30'
-                  : 'border-teal-900/[0.08] dark:border-teal-400/[0.12]'
+                  ? 'border-teal-600 dark:border-teal-400 ring-1 ring-teal-500/25'
+                  : 'border-slate-200/90 dark:border-white/[0.08]'
               }`}
             >
               <RoomPhotoSlider
@@ -145,8 +145,8 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-display font-semibold text-sm text-slate-900 dark:text-white tracking-wide truncate">
-                        {panelName.toUpperCase()}
+                      <p className="font-display font-semibold text-sm text-slate-900 dark:text-white truncate">
+                        {panelName}
                       </p>
                       <p className="text-xs text-teal-700 dark:text-teal-300 font-medium truncate">
                         {rt.subtitle}
@@ -166,7 +166,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between gap-2 pt-2 border-t border-teal-900/[0.06] dark:border-white/[0.06]">
+                <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200/70 dark:border-white/[0.07]">
                   <button
                     type="button"
                     onClick={() => setFilter(isSelected ? 'all' : typeFilterId)}
@@ -180,7 +180,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                   <button
                     type="button"
                     onClick={() => onEditRoomType(rt)}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-teal-700/20 dark:border-teal-400/25 bg-gradient-to-r from-teal-50/90 to-emerald-50/70 dark:from-teal-500/10 dark:to-emerald-500/10 text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition-colors"
                   >
                     <Pencil className="w-3 h-3" />
                     <span>Edit Panel</span>
@@ -194,7 +194,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
 
       {/* Toolbar */}
       <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-        <div className="flex items-center gap-1 p-1 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] overflow-x-auto">
+        <div className="flex items-center gap-1 p-1 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-x-auto">
           {filterTabs.map((tab) => {
             const active = filter === tab.id;
             return (
@@ -202,10 +202,10 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                 key={tab.id}
                 type="button"
                 onClick={() => setFilter(tab.id)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
                   active
                     ? 'nav-active-gradient text-white'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-teal-500/[0.08]'
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
                 }`}
               >
                 {tab.label}{' '}
@@ -229,7 +229,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari kamar, nama penyewa..."
-              className="w-full pl-9 pr-8 py-2 rounded-lg surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-teal-600 dark:focus:border-teal-400"
+              className="w-full pl-9 pr-8 py-2 rounded-lg input-surface border text-sm placeholder:text-slate-400"
             />
             {search && (
               <button
@@ -246,17 +246,17 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
           <button
             type="button"
             onClick={onOpenAddRoom}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-teal-700/20 dark:border-teal-400/25 bg-gradient-to-r from-teal-50/90 to-emerald-50/70 dark:from-teal-500/10 dark:to-emerald-500/10 text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium whitespace-nowrap shrink-0 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 dark:border-white/[0.12] surface-card text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium whitespace-nowrap shrink-0 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Tambah Unit</span>
           </button>
 
-          <div className="flex items-center p-1 rounded-lg surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] shrink-0">
+          <div className="flex items-center p-1 rounded-lg surface-card border border-slate-200/90 dark:border-white/[0.08] shrink-0">
             <button
               type="button"
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-all ${
+              className={`p-1.5 rounded-md transition-colors ${
                 viewMode === 'grid'
                   ? 'nav-active-gradient text-white'
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -269,7 +269,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
             <button
               type="button"
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-md transition-all ${
+              className={`p-1.5 rounded-md transition-colors ${
                 viewMode === 'table'
                   ? 'nav-active-gradient text-white'
                   : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -285,7 +285,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
 
       {/* Empty State */}
       {filteredRooms.length === 0 ? (
-        <div className="rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-12 text-center space-y-3">
+        <div className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-12 text-center space-y-3">
           <BedDouble className="w-8 h-8 text-teal-600 dark:text-teal-400 mx-auto" />
           <p className="font-display font-medium text-slate-900 dark:text-white">
             Tidak ada unit kamar yang cocok
@@ -299,7 +299,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
               setFilter('all');
               setSearch('');
             }}
-            className="px-4 py-2 rounded-lg btn-primary text-xs font-medium transition-all"
+            className="px-4 py-2 rounded-lg btn-primary text-xs font-medium transition-colors"
           >
             Tampilkan Semua Kamar
           </button>
@@ -323,12 +323,14 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                     onSelectRoom(room);
                   }
                 }}
-                className={`group rounded-xl p-5 border transition-all duration-150 cursor-pointer flex flex-col justify-between gap-4 ${
-                  isOccupied
-                    ? 'surface-card border-teal-900/[0.08] dark:border-teal-400/[0.12] hover:border-teal-500/40'
+                className={`group rounded-xl p-5 surface-card border transition-colors cursor-pointer flex flex-col justify-between gap-4 ${
+                  !isOccupied && !isMaintenance
+                    ? 'border-teal-300/80 dark:border-teal-400/30 hover:border-teal-600'
                     : isMaintenance
-                    ? 'bg-gradient-to-br from-amber-50/90 to-orange-50/50 dark:from-amber-950/35 dark:to-orange-950/20 border-amber-300/80 dark:border-amber-400/30 hover:border-amber-500'
-                    : 'bg-gradient-to-br from-teal-50/90 via-emerald-50/50 to-cyan-50/40 dark:from-teal-950/50 dark:via-[#0A2024] dark:to-cyan-950/30 border-teal-300/80 dark:border-teal-400/30 hover:border-teal-500'
+                    ? 'border-amber-300/80 dark:border-amber-400/30 hover:border-amber-500'
+                    : payRec?.status === 'Belum Bayar'
+                    ? 'border-rose-200 dark:border-rose-400/25 hover:border-rose-400'
+                    : 'border-slate-200/90 dark:border-white/[0.08] hover:border-teal-500/50'
                 }`}
               >
                 <div className="space-y-3">
@@ -347,7 +349,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                         isOccupied
                           ? payRec?.status === 'Belum Bayar'
                             ? 'text-rose-600 dark:text-rose-400'
-                            : 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-emerald-700 dark:text-emerald-400'
                           : isMaintenance
                           ? 'text-amber-700 dark:text-amber-300'
                           : 'text-teal-700 dark:text-teal-300'
@@ -358,7 +360,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                   </div>
 
                   {isOccupied && room.tenant ? (
-                    <div className="pt-3 border-t border-teal-900/[0.06] dark:border-white/[0.06]">
+                    <div className="pt-3 border-t border-slate-200/70 dark:border-white/[0.06]">
                       <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">
                         {room.tenant.name}
                       </p>
@@ -370,12 +372,12 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                       </p>
                     </div>
                   ) : isMaintenance ? (
-                    <div className="pt-3 border-t border-amber-500/20 flex items-center gap-2 text-xs text-amber-800 dark:text-amber-200">
+                    <div className="pt-3 border-t border-slate-200/70 dark:border-white/[0.06] flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300">
                       <Wrench className="w-3.5 h-3.5 shrink-0" />
                       <span>Sedang dalam perbaikan / perawatan.</span>
                     </div>
                   ) : (
-                    <div className="pt-3 border-t border-teal-600/15 dark:border-teal-400/20">
+                    <div className="pt-3 border-t border-slate-200/70 dark:border-white/[0.06]">
                       <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                         Unit bersih &amp; siap ditempati penyewa baru.
                       </p>
@@ -383,7 +385,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                   )}
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-teal-900/[0.06] dark:border-white/[0.06]">
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200/70 dark:border-white/[0.06]">
                   <span className="font-mono-num text-sm font-semibold text-slate-900 dark:text-white">
                     {formatIDR(room.monthlyRate)}
                     <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
@@ -402,7 +404,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                         e.stopPropagation();
                         onOpenCheckIn(room.number);
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-primary text-xs font-medium transition-all"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-primary text-xs font-medium transition-colors"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
                       <span>Check-In</span>
@@ -414,21 +416,21 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
           })}
         </div>
       ) : (
-        <div className="rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] overflow-hidden">
+        <div className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  <th className="py-3 px-5">Kamar</th>
-                  <th className="py-3 px-4">Tipe &amp; Luas</th>
-                  <th className="py-3 px-4">Penyewa</th>
-                  <th className="py-3 px-4">Kontak</th>
-                  <th className="py-3 px-4">Tgl Masuk</th>
-                  <th className="py-3 px-4 text-right">Tarif / Bln</th>
-                  <th className="py-3 px-5 text-right">Status</th>
+                <tr className="border-b border-slate-200/80 dark:border-white/[0.08] text-xs font-medium text-slate-500 dark:text-slate-400">
+                  <th className="py-3.5 px-5">Kamar</th>
+                  <th className="py-3.5 px-4">Tipe &amp; Luas</th>
+                  <th className="py-3.5 px-4">Penyewa</th>
+                  <th className="py-3.5 px-4">Kontak</th>
+                  <th className="py-3.5 px-4">Tgl Masuk</th>
+                  <th className="py-3.5 px-4 text-right">Tarif / Bln</th>
+                  <th className="py-3.5 px-5 text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-teal-900/[0.05] dark:divide-white/[0.05] text-sm">
+              <tbody className="divide-y divide-slate-200/70 dark:divide-white/[0.06] text-sm">
                 {filteredRooms.map((room) => {
                   const isOccupied = room.status === 'Terisi' && room.tenant;
                   const isMaintenance = room.status === 'Perawatan';
@@ -436,9 +438,9 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                     <tr
                       key={room.id}
                       onClick={() => onSelectRoom(room)}
-                      className="hover:bg-teal-500/[0.04] cursor-pointer transition-colors"
+                      className="hover:bg-slate-50 dark:hover:bg-white/[0.03] cursor-pointer transition-colors"
                     >
-                      <td className="py-3 px-5 font-medium text-slate-900 dark:text-white">
+                      <td className="py-3.5 px-5 font-medium text-slate-900 dark:text-white">
                         <span>{getRoomDisplayName(room)}</span>
                         {room.name?.trim() && (
                           <span className="font-mono-num text-xs text-slate-400 ml-1.5">
@@ -446,10 +448,10 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-xs text-slate-600 dark:text-slate-300">
+                      <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">
                         {room.tier} · {room.areaSqm} m²
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         {isOccupied && room.tenant ? (
                           <div>
                             <p className="font-medium text-slate-900 dark:text-white">
@@ -469,16 +471,16 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 font-mono-num text-xs text-slate-600 dark:text-slate-300">
+                      <td className="py-3.5 px-4 font-mono-num text-xs text-slate-600 dark:text-slate-300">
                         {room.tenant?.phone ?? '—'}
                       </td>
-                      <td className="py-3 px-4 font-mono-num text-xs text-slate-500 dark:text-slate-400">
+                      <td className="py-3.5 px-4 font-mono-num text-xs text-slate-500 dark:text-slate-400">
                         {room.tenant ? formatDateID(room.tenant.checkInDate) : '—'}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono-num font-medium text-slate-900 dark:text-white">
+                      <td className="py-3.5 px-4 text-right font-mono-num font-medium text-slate-900 dark:text-white">
                         {formatIDR(room.monthlyRate)}
                       </td>
-                      <td className="py-3 px-5 text-right">
+                      <td className="py-3.5 px-5 text-right">
                         {isOccupied ? (
                           <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                             Terisi
@@ -494,7 +496,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                               e.stopPropagation();
                               onOpenCheckIn(room.number);
                             }}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg btn-primary text-xs font-medium transition-all"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg btn-primary text-xs font-medium transition-colors"
                           >
                             Check-In
                           </button>

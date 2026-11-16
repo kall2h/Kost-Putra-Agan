@@ -54,6 +54,7 @@ import {
 import { DEFAULT_MESSAGE_TEMPLATES, renderMessageTemplate } from '../utils/messageTemplates';
 import { buildShareablePaymentUrl, resolveRoomPaymentProfile } from '../utils/receiptPdf';
 import { RoomPhotoSlider } from './RoomPhotoSlider';
+import { CurrencyInput } from './CurrencyInput';
 
 interface RoomDrawerProps {
   room: Room | null;
@@ -430,7 +431,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -438,10 +439,10 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={`Detail ${displayName}`}
-        className="relative z-10 w-full max-w-md h-full bg-gradient-to-b from-white via-[#F6FCFB] to-[#EFFAF8] dark:from-[#0A1A1E] dark:via-[#081519] dark:to-[#050F13] border-l border-teal-900/[0.1] dark:border-teal-400/[0.14] shadow-xl flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-md h-full bg-white dark:bg-[#0f1a1e] border-l border-slate-200 dark:border-white/[0.08] shadow-xl flex flex-col overflow-hidden animate-drawer-in"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-teal-900/[0.08] dark:border-teal-400/[0.1] flex items-center justify-between gap-2">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between gap-2">
           <div className="min-w-0">
             <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
               Unit {room.number} · {panelLabel} · {room.areaSqm} m²
@@ -457,7 +458,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                 setActiveTab('info');
                 setEditingUnit((v) => !v);
               }}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-teal-700/20 dark:border-teal-400/20 text-xs font-medium text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-white/[0.06] transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition-colors whitespace-nowrap"
             >
               <Pencil className="w-3.5 h-3.5" />
               <span>Ubah Kamar</span>
@@ -474,14 +475,14 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
         </div>
 
         {/* Drawer Segmented Tabs */}
-        <div className="px-6 pt-3 pb-2 border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] flex items-center gap-1.5">
+        <div className="px-6 pt-3 pb-2.5 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center gap-1.5">
           <button
             type="button"
             onClick={() => setActiveTab('info')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
               activeTab === 'info'
-                ? 'nav-active-gradient text-white'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-teal-500/10'
+                ? 'bg-teal-50 dark:bg-teal-500/15 text-teal-800 dark:text-teal-200'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
             }`}
           >
             Info &amp; Tagihan
@@ -489,10 +490,10 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('maintenance')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-medium inline-flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-medium inline-flex items-center justify-center gap-1 transition-colors whitespace-nowrap ${
               activeTab === 'maintenance'
-                ? 'nav-active-gradient text-white'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-teal-500/10'
+                ? 'bg-teal-50 dark:bg-teal-500/15 text-teal-800 dark:text-teal-200'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
             }`}
           >
             <Wrench className="w-3 h-3" />
@@ -501,10 +502,10 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('history')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-medium inline-flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-medium inline-flex items-center justify-center gap-1 transition-colors whitespace-nowrap ${
               activeTab === 'history'
-                ? 'nav-active-gradient text-white'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-teal-500/10'
+                ? 'bg-teal-50 dark:bg-teal-500/15 text-teal-800 dark:text-teal-200'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
             }`}
           >
             <History className="w-3 h-3" />
@@ -520,7 +521,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
               {editingUnit && (
                 <form
                   onSubmit={handleSaveUnit}
-                  className="p-4 rounded-xl bg-teal-50/80 dark:bg-teal-500/[0.08] border border-teal-700/20 dark:border-teal-400/25 space-y-3"
+                  className="p-4 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.09] space-y-3"
                 >
                   <p className="text-xs font-semibold text-slate-900 dark:text-white">
                     Ubah Nama, Tipe &amp; Tarif Unit {room.number}
@@ -557,13 +558,12 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                       <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
                         Tarif / Bulan (Rp)
                       </label>
-                      <input
-                        type="number"
-                        min={0}
-                        step={25000}
+                      <CurrencyInput
+                        compact
                         value={unitRate}
-                        onChange={(e) => setUnitRate(Number(e.target.value))}
-                        className="w-full px-2.5 py-2 rounded-lg input-surface border font-mono-num text-xs"
+                        onChange={setUnitRate}
+                        aria-label="Tarif per Bulan (Rp)"
+                        className="w-full pr-2.5 py-2 rounded-lg input-surface border font-mono-num text-xs"
                       />
                     </div>
                   </div>
@@ -649,7 +649,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                   className="aspect-[4/3] w-full rounded-xl border border-slate-200 dark:border-white/[0.08]"
                 />
 
-                <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/70 dark:bg-white/[0.03] border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
+                <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08]">
                   <div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Tarif Sewa Bulanan
@@ -698,7 +698,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                   {editingTenant ? (
                     <form
                       onSubmit={handleSaveTenant}
-                      className="p-4 rounded-xl bg-white/80 dark:bg-[#0B1418] border border-teal-700/20 dark:border-teal-400/20 space-y-3"
+                      className="p-4 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.09] space-y-3"
                     >
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div>
@@ -795,13 +795,12 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                           <label className="block text-[11px] font-medium text-slate-500 mb-1">
                             Deposit (Rp)
                           </label>
-                          <input
-                            type="number"
-                            min={0}
-                            step={50000}
+                          <CurrencyInput
+                            compact
                             value={tDepositAmount}
-                            onChange={(e) => setTDepositAmount(Number(e.target.value))}
-                            className="w-full px-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
+                            onChange={setTDepositAmount}
+                            aria-label="Deposit (Rp)"
+                            className="w-full pr-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
                           />
                         </div>
                         <div>
@@ -898,7 +897,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                           )}
                       </div>
 
-                      <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-[#0B1017] border border-slate-200/80 dark:border-white/[0.08] text-xs space-y-1">
+                      <div className="p-3.5 rounded-lg bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] text-xs space-y-1">
                         <p className="text-slate-500 dark:text-slate-400">Kontak Darurat</p>
                         <p className="font-medium text-slate-800 dark:text-slate-200">
                           {room.tenant.emergencyContact}
@@ -971,9 +970,9 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                             type="button"
                             disabled={creatingLink}
                             onClick={handleCopyPaymentLink}
-                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-teal-700/25 dark:border-teal-400/25 bg-teal-50/60 dark:bg-teal-500/[0.08] text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium transition-colors"
+                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.12] hover:bg-slate-50 dark:hover:bg-white/[0.05] text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
                           >
-                            <Link2 className="w-3.5 h-3.5" />
+                            <Link2 className="w-3.5 h-3.5 text-teal-700 dark:text-teal-300" />
                             <span>
                               {creatingLink
                                 ? 'Menyiapkan Link...'
@@ -988,7 +987,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                               onClick={() =>
                                 onCopyReminder(room, billTotal, currentMonthPayment)
                               }
-                              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] hover:bg-slate-50 dark:hover:bg-white/[0.05] text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
+                              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.12] hover:bg-slate-50 dark:hover:bg-white/[0.05] text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
                             >
                               <Copy className="w-3.5 h-3.5" />
                               <span>Salin Pesan</span>
@@ -997,7 +996,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                               href={waUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-teal-700/25 dark:border-teal-400/25 bg-teal-50/70 dark:bg-teal-500/10 text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium transition-colors"
+                              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.12] hover:bg-slate-50 dark:hover:bg-white/[0.05] text-teal-700 dark:text-teal-300 text-xs font-medium transition-colors"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               <span>Kirim WA</span>
@@ -1009,7 +1008,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                   )}
                 </div>
               ) : room.status === 'Perawatan' ? (
-                <div className="p-5 rounded-xl bg-amber-50/80 dark:bg-amber-500/[0.08] border border-amber-300/80 dark:border-amber-500/25 space-y-3">
+                <div className="p-5 rounded-xl bg-amber-50/50 dark:bg-amber-500/[0.06] border border-amber-200/90 dark:border-amber-500/25 space-y-3">
                   <p className="font-display font-semibold text-base text-slate-900 dark:text-white">
                     Unit Sedang Dalam Perawatan
                   </p>
@@ -1036,7 +1035,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="p-5 rounded-xl bg-teal-50/70 dark:bg-teal-500/[0.06] border border-teal-200/80 dark:border-teal-500/25 space-y-3">
+                <div className="p-5 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] space-y-3">
                   <p className="font-display font-semibold text-base text-slate-900 dark:text-white">
                     Unit Siap Huni
                   </p>
@@ -1059,7 +1058,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
               )}
 
               {/* Profil Pembayaran & Otomasi Kwitansi Per Kamar */}
-              <div className="p-4 rounded-xl bg-white/75 dark:bg-white/[0.03] border border-teal-900/[0.08] dark:border-teal-400/[0.12] space-y-3">
+              <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
                     <CreditCard className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
@@ -1107,7 +1106,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                         onClick={() => setProfileUseCustom(false)}
                         className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
                           !profileUseCustom
-                            ? 'nav-active-gradient border-transparent text-white'
+                            ? 'bg-teal-50 dark:bg-teal-500/15 border-teal-600/40 text-teal-800 dark:text-teal-200'
                             : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300'
                         }`}
                       >
@@ -1118,7 +1117,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                         onClick={() => setProfileUseCustom(true)}
                         className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
                           profileUseCustom
-                            ? 'nav-active-gradient border-transparent text-white'
+                            ? 'bg-teal-50 dark:bg-teal-500/15 border-teal-600/40 text-teal-800 dark:text-teal-200'
                             : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300'
                         }`}
                       >
@@ -1306,7 +1305,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
               {addingMnt && (
                 <form
                   onSubmit={handleAddMaintenance}
-                  className="p-4 rounded-xl bg-teal-50/70 dark:bg-teal-500/[0.08] border border-teal-700/20 dark:border-teal-400/25 space-y-3"
+                  className="p-4 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.09] space-y-3"
                 >
                   <div>
                     <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
@@ -1363,13 +1362,12 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                       <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
                         Estimasi Biaya (Rp)
                       </label>
-                      <input
-                        type="number"
-                        min={0}
-                        step={10000}
+                      <CurrencyInput
+                        compact
                         value={mntCost}
-                        onChange={(e) => setMntCost(Number(e.target.value))}
-                        className="w-full px-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
+                        onChange={setMntCost}
+                        aria-label="Estimasi Biaya (Rp)"
+                        className="w-full pr-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
                       />
                     </div>
                     <div>
@@ -1416,7 +1414,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
               )}
 
               {roomMaintenance.length === 0 ? (
-                <div className="py-10 text-center space-y-2 border border-dashed border-teal-900/15 dark:border-teal-400/20 rounded-xl">
+                <div className="py-10 text-center space-y-2 border border-dashed border-slate-200 dark:border-white/[0.12] rounded-xl">
                   <Wrench className="w-7 h-7 text-teal-600 dark:text-teal-400 mx-auto" />
                   <p className="text-xs font-medium text-slate-800 dark:text-slate-200">
                     Belum ada catatan perawatan di {displayName}
@@ -1430,7 +1428,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                   {roomMaintenance.map((log) => (
                     <div
                       key={log.id}
-                      className="p-3.5 rounded-xl bg-white/75 dark:bg-white/[0.03] border border-teal-900/[0.08] dark:border-teal-400/[0.12] space-y-2"
+                      className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] space-y-2"
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -1500,7 +1498,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
               </div>
 
               {roomHistory.length === 0 ? (
-                <div className="py-10 text-center space-y-2 border border-dashed border-teal-900/15 dark:border-teal-400/20 rounded-xl">
+                <div className="py-10 text-center space-y-2 border border-dashed border-slate-200 dark:border-white/[0.12] rounded-xl">
                   <History className="w-7 h-7 text-teal-600 dark:text-teal-400 mx-auto" />
                   <p className="text-xs font-medium text-slate-800 dark:text-slate-200">
                     Belum ada riwayat penghuni lama
@@ -1514,7 +1512,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                   {roomHistory.map((item) => (
                     <div
                       key={item.id}
-                      className="p-3.5 rounded-xl bg-white/75 dark:bg-white/[0.03] border border-teal-900/[0.08] dark:border-teal-400/[0.12] space-y-1.5"
+                      className="p-3.5 rounded-xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] space-y-1.5"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-xs font-semibold text-slate-900 dark:text-white">
@@ -1551,7 +1549,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
 
         {/* Footer Actions for Occupied Room */}
         {isOccupied && activeTab === 'info' && (
-          <div className="p-4 border-t border-slate-200/80 dark:border-white/[0.07] bg-slate-50 dark:bg-[#0D1219]">
+          <div className="p-4 border-t border-slate-200/80 dark:border-white/[0.08] bg-slate-50/90 dark:bg-[#0c161a]">
             {!confirmCheckOut ? (
               <button
                 type="button"

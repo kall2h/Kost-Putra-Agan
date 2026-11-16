@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { X, Wallet } from 'lucide-react';
 import { ExpenseCategory } from '../types/kost';
+import { formatIDR } from '../utils/format';
+import { CurrencyInput } from './CurrencyInput';
 
 interface AddExpenseModalProps {
   open: boolean;
@@ -47,7 +49,7 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -55,9 +57,9 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-expense-title"
-        className="relative z-10 w-full max-w-md rounded-2xl bg-gradient-to-b from-white to-[#F4FCFA] dark:from-[#0C1E22] dark:to-[#071418] border border-teal-900/[0.1] dark:border-teal-400/[0.16] shadow-xl overflow-hidden"
+        className="relative z-10 w-full max-w-md rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
       >
-        <div className="px-6 py-4 border-b border-teal-900/[0.08] dark:border-teal-400/[0.1] flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Wallet className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             <h2
@@ -113,13 +115,11 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                 Nominal (Rp)
               </label>
-              <input
-                type="number"
-                min={1000}
-                step={5000}
+              <CurrencyInput
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg input-surface border font-mono-num text-sm"
+                onChange={setAmount}
+                aria-label="Nominal Pengeluaran (Rp)"
+                className="w-full pr-3 py-2 rounded-lg input-surface border font-mono-num text-sm"
               />
             </div>
           </div>
@@ -159,9 +159,10 @@ export const AddExpenseModal: React.FC<AddExpenseModalProps> = ({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-lg btn-primary text-sm font-medium transition-colors"
+              disabled={amount <= 0}
+              className="px-5 py-2 rounded-lg btn-primary text-sm font-medium transition-colors disabled:opacity-50"
             >
-              Simpan Pengeluaran
+              Simpan Pengeluaran ({formatIDR(amount)})
             </button>
           </div>
         </form>

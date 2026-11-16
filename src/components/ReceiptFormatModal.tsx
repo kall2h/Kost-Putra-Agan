@@ -117,7 +117,7 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/55 backdrop-blur-xs"
+        className="fixed inset-0 bg-black/55 backdrop-blur-xs animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -125,10 +125,10 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label="Editor Format & Otomasi Kwitansi PDF"
-        className="relative z-10 w-full max-w-5xl max-h-[92vh] rounded-2xl bg-gradient-to-b from-white to-[#F4FCFA] dark:from-[#0C1E22] dark:to-[#071418] border border-teal-900/[0.1] dark:border-teal-400/[0.16] shadow-xl flex flex-col overflow-hidden"
+        className="relative z-10 w-full max-w-5xl max-h-[92vh] rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl flex flex-col overflow-hidden animate-modal-in"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-teal-900/[0.08] dark:border-teal-400/[0.1] flex items-center justify-between gap-3">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <FileText className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             <div>
@@ -252,7 +252,7 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
             </div>
 
             {/* Element Toggles */}
-            <div className="p-4 rounded-xl bg-white/75 dark:bg-[#081417] border border-teal-900/[0.08] dark:border-teal-400/[0.12] space-y-2.5">
+            <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] space-y-2.5">
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Elemen di Dokumen PDF
               </p>
@@ -284,7 +284,7 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
                     }
                     className="rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                   />
-                  <span>Tampilkan QR Verifikasi Link</span>
+                  <span>QR Cek Keaslian &amp; Unduh PDF</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-200">
                   <input
@@ -301,8 +301,8 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
             </div>
 
             {/* Automation Toggles */}
-            <div className="p-4 rounded-xl bg-teal-50/70 dark:bg-teal-500/[0.08] border border-teal-700/20 dark:border-teal-400/25 space-y-2.5">
-              <div className="flex items-center gap-1.5 text-teal-800 dark:text-teal-200">
+            <div className="p-4 rounded-xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.08] space-y-2.5">
+              <div className="flex items-center gap-1.5 text-teal-700 dark:text-teal-300">
                 <Sparkles className="w-3.5 h-3.5" />
                 <p className="text-xs font-semibold uppercase tracking-wider">
                   Otomasi Default Saat Tagihan Lunas
@@ -371,7 +371,7 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
                 type="button"
                 disabled={testingPdf}
                 onClick={handleDownloadSamplePdf}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal-700/25 dark:border-teal-400/25 text-xs font-medium text-teal-800 dark:text-teal-200 hover:bg-teal-50 dark:hover:bg-teal-500/10"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition-colors"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>{testingPdf ? 'Membuat...' : 'Unduh Contoh PDF'}</span>
@@ -379,9 +379,9 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
             </div>
 
             <div className="rounded-xl bg-white text-slate-900 border border-slate-200 shadow-sm overflow-hidden">
-              <div className={`h-2 w-full ${accentStyle.bar}`} />
-              <div className="p-5 space-y-4 text-xs">
-                <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-3.5">
+              <div className={`h-1 w-full ${accentStyle.bar}`} />
+              <div className="p-6 space-y-5 text-xs">
+                <div className="flex items-start justify-between gap-3 border-b border-slate-200 pb-4">
                   <div className="flex items-center gap-2.5">
                     {form.showLogo && <PropertyLogo className="w-8 h-8" />}
                     <div>
@@ -389,7 +389,7 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
                         {settings.name}
                       </p>
                       {form.showAddress && (
-                        <p className="text-[11px] text-slate-500 max-w-[200px] leading-snug">
+                        <p className="text-[11px] text-slate-500 max-w-[200px] leading-snug mt-0.5">
                           {settings.address}
                         </p>
                       )}
@@ -401,24 +401,26 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
                     >
                       {form.title || 'KWITANSI SEWA'}
                     </p>
-                    {form.subtitle && (
-                      <p className="text-[10px] text-slate-500">{form.subtitle}</p>
-                    )}
                     <p className="font-mono-num text-[11px] font-semibold text-slate-900 mt-0.5">
                       INV-CONTOH-101
                     </p>
+                    {form.subtitle && (
+                      <p className="text-[10px] text-slate-500 mt-0.5">{form.subtitle}</p>
+                    )}
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-50 grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-4 border-b border-slate-200 pb-4">
                   <div>
-                    <p className="text-[10px] uppercase text-slate-400">Diterima Dari</p>
-                    <p className="font-semibold text-slate-900 mt-0.5">Rizky Ramadhan</p>
+                    <p className="text-[11px] text-slate-400">Penyewa &amp; Unit</p>
+                    <p className="font-semibold text-slate-900 text-sm mt-0.5">
+                      Rizky Ramadhan
+                    </p>
                     <p className="text-[11px] text-slate-600">Kamar 101 · Tipe A</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase text-slate-400">Periode</p>
-                    <p className="font-semibold text-slate-900 mt-0.5">
+                    <p className="text-[11px] text-slate-400">Periode &amp; Bayar</p>
+                    <p className="font-semibold text-slate-900 text-sm mt-0.5">
                       {formatMonthYear(sampleMonth)}
                     </p>
                     <p className="text-[11px] text-slate-600">
@@ -427,57 +429,49 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
                   </div>
                 </div>
 
-                <div>
-                  <div
-                    className={`px-3 py-1.5 rounded-t-md flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider ${accentStyle.tableHeader}`}
-                  >
-                    <span>Rincian Tagihan</span>
-                    <span>Nominal</span>
+                <div className="space-y-2 border-b border-slate-200 pb-4">
+                  <div className="flex items-center justify-between text-slate-800">
+                    <span>Sewa Kamar 101 ({formatMonthYear(sampleMonth)})</span>
+                    <span className="font-mono-num font-semibold">
+                      {formatIDR(1750000)}
+                    </span>
                   </div>
-                  <div className="border border-t-0 border-slate-200 rounded-b-md p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span>Sewa Kamar 101 ({formatMonthYear(sampleMonth)})</span>
-                      <span className="font-mono-num font-semibold">
-                        {formatIDR(1750000)}
-                      </span>
+                  {form.includedItemsText.trim() && (
+                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <span className="max-w-[75%]">{form.includedItemsText}</span>
+                      <span>Termasuk</span>
                     </div>
-                    {form.includedItemsText.trim() && (
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
-                        <span className="max-w-[75%]">{form.includedItemsText}</span>
-                        <span>Termasuk</span>
-                      </div>
-                    )}
-                    {form.showDepositInfo && (
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>Status Deposit (Disimpan)</span>
-                        <span className="font-mono-num">{formatIDR(500000)}</span>
-                      </div>
-                    )}
-                  </div>
+                  )}
+                  {form.showDepositInfo && (
+                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <span>Uang Jaminan / Deposit (Disimpan)</span>
+                      <span className="font-mono-num">{formatIDR(500000)}</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between pt-1">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-50 border border-emerald-500/30 text-emerald-800 text-[11px] font-semibold">
+                <div className="flex items-end justify-between">
+                  <div className="inline-flex items-center gap-1.5 text-emerald-700 text-[11px] font-semibold">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     <span>LUNAS · TERVERIFIKASI</span>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] text-slate-400">TOTAL DIBAYARKAN</p>
-                    <p className="font-mono-num text-lg font-bold text-slate-950">
+                    <p className="text-[11px] text-slate-400">Total Dibayarkan</p>
+                    <p className="font-mono-num text-xl font-bold text-slate-950">
                       {formatIDR(1750000)}
                     </p>
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
+                <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
                   {form.showQrVerification ? (
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
-                      <div className="w-10 h-10 rounded border border-slate-300 flex items-center justify-center bg-slate-50">
-                        <QrCode className="w-6 h-6 text-slate-700" />
+                    <div className="flex items-center gap-2.5 text-[10px] text-slate-500">
+                      <div className="w-10 h-10 rounded border border-slate-200 flex items-center justify-center bg-white">
+                        <QrCode className="w-6 h-6 text-slate-800" />
                       </div>
                       <div>
-                        <p className="font-medium text-slate-700">Verifikasi QR Digital</p>
-                        <p>Pindai untuk salinan PDF</p>
+                        <p className="font-semibold text-slate-700">Cek Keaslian &amp; PDF</p>
+                        <p>Scan QR untuk buka kwitansi</p>
                       </div>
                     </div>
                   ) : (
@@ -487,12 +481,12 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
                     <p className="text-[10px] text-slate-400">
                       {form.signerLabel || 'Pengelola Properti'}
                     </p>
-                    <p className="font-semibold text-slate-900 mt-1">{settings.adminName}</p>
+                    <p className="font-semibold text-slate-900 mt-2">{settings.adminName}</p>
                   </div>
                 </div>
 
                 {form.footerNote.trim() && (
-                  <p className="text-[10px] text-slate-500 pt-2 border-t border-slate-100 leading-relaxed">
+                  <p className="text-[10px] text-slate-500 pt-3 border-t border-slate-100 leading-relaxed">
                     {form.footerNote}
                   </p>
                 )}
@@ -501,7 +495,7 @@ export const ReceiptFormatModal: React.FC<ReceiptFormatModalProps> = ({
           </div>
 
           {/* Footer Buttons */}
-          <div className="lg:col-span-12 pt-4 border-t border-teal-900/[0.08] dark:border-teal-400/[0.1] flex flex-wrap items-center justify-between gap-3">
+          <div className="lg:col-span-12 pt-4 border-t border-slate-200/80 dark:border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => setForm(DEFAULT_RECEIPT_TEMPLATE)}

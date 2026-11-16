@@ -8,13 +8,14 @@
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     font-family: var(--font-sans);
-    background-color: #f0f9f8;
-    background-image:
-      radial-gradient(circle at 88% 8%, rgba(20, 184, 166, 0.11), transparent 40%),
-      radial-gradient(circle at 12% 90%, rgba(14, 165, 233, 0.08), transparent 42%),
-      linear-gradient(135deg, #eefaf7 0%, #f6f9fc 50%, #eef5ff 100%);
+    background-color: #f6f9f9;
+    background-image: linear-gradient(180deg, #f8fbfb 0%, #f1f6f6 100%);
     background-attachment: fixed;
     color: #0f172a;
     overflow-x: hidden;
@@ -23,11 +24,8 @@
   }
 
   .dark body {
-    background-color: #040b0e;
-    background-image:
-      radial-gradient(circle at 85% 8%, rgba(20, 184, 166, 0.14), transparent 42%),
-      radial-gradient(circle at 10% 85%, rgba(6, 182, 212, 0.08), transparent 45%),
-      linear-gradient(145deg, #040b0e 0%, #07191c 52%, #050e16 100%);
+    background-color: #091114;
+    background-image: linear-gradient(180deg, #0b1417 0%, #070e11 100%);
     background-attachment: fixed;
     color: #f1f5f9;
   }
@@ -40,85 +38,252 @@
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
+
+  /* Smooth scrolling inside scrollable panels & drawers */
+  .overflow-y-auto,
+  .overflow-x-auto {
+    scroll-behavior: smooth;
+  }
+
+  /* Tactile click/press animation across buttons & interactive controls */
+  button:not(:disabled),
+  a.btn-primary,
+  [role="button"] {
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease,
+      opacity 160ms ease,
+      scale 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  button:not(:disabled):active,
+  a.btn-primary:active,
+  [role="button"]:active {
+    scale: 0.975;
+  }
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    scale: 0.97;
+    translate: 0 8px;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes drawerSlideIn {
+  from {
+    opacity: 0;
+    translate: 28px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes drawerLeftIn {
+  from {
+    opacity: 0;
+    translate: -28px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toastSlideUp {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes chartDrawLine {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html,
+  .overflow-y-auto,
+  .overflow-x-auto {
+    scroll-behavior: auto;
+  }
+  button:not(:disabled):active,
+  a.btn-primary:active,
+  [role="button"]:active {
+    scale: 1;
+  }
+  .animate-page-enter,
+  .animate-modal-in,
+  .animate-drawer-in,
+  .animate-drawer-left-in,
+  .animate-backdrop-in,
+  .animate-toast-in,
+  .animate-chart-draw,
+  .animate-chart-fade {
+    animation: none !important;
+  }
 }
 
 @layer utilities {
-  /* Gradient architectural card surface */
+  .animate-page-enter {
+    animation: pageEnter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-modal-in {
+    animation: modalPopIn 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-drawer-in {
+    animation: drawerSlideIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-drawer-left-in {
+    animation: drawerLeftIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-backdrop-in {
+    animation: backdropFadeIn 160ms ease-out both;
+  }
+
+  .animate-toast-in {
+    animation: toastSlideUp 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-chart-draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: chartDrawLine 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  .animate-chart-fade {
+    animation: chartFadeIn 500ms ease-out both;
+  }
+
+  /* Calm single-elevation flat surface */
   .surface-card {
-    background: linear-gradient(155deg, rgba(255, 255, 255, 0.96) 0%, rgba(244, 252, 250, 0.88) 100%);
-    backdrop-filter: blur(8px);
-    box-shadow: 0 2px 10px -2px rgba(15, 118, 110, 0.05), 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+    background-color: #ffffff;
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
   }
   .dark .surface-card {
-    background: linear-gradient(155deg, rgba(13, 31, 35, 0.88) 0%, rgba(7, 18, 23, 0.94) 100%);
-    backdrop-filter: blur(10px);
+    background-color: #0f1a1e;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.25);
+  }
+
+  /* Calm signature focal card */
+  .gradient-hero-card {
+    background: linear-gradient(145deg, #0c4a49 0%, #0f6b66 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px -4px rgba(15, 107, 102, 0.25);
+  }
+  .dark .gradient-hero-card {
+    background: linear-gradient(145deg, #0b3f3f 0%, #0e605c 100%);
+    color: #ffffff;
     box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.35);
   }
 
-  /* Signature Kost Putra Agan focal gradient card */
-  .gradient-hero-card {
-    background: linear-gradient(135deg, #06383b 0%, #0c6968 54%, #0d9488 100%);
-    color: #ffffff;
-    box-shadow: 0 10px 25px -8px rgba(13, 148, 136, 0.35);
-  }
-  .dark .gradient-hero-card {
-    background: linear-gradient(135deg, #073336 0%, #0c5d5e 52%, #0d9488 100%);
-    color: #ffffff;
-    box-shadow: 0 10px 28px -8px rgba(13, 148, 136, 0.32);
-  }
-
-  /* Primary gradient CTA button */
+  /* Calm primary CTA button */
   .btn-primary {
-    background: linear-gradient(135deg, #0f766e 0%, #0d9488 55%, #059669 100%);
+    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
     color: #ffffff;
-    box-shadow: 0 4px 12px -2px rgba(13, 148, 136, 0.32);
+    box-shadow: 0 1px 2px 0 rgba(13, 148, 136, 0.2);
   }
   .btn-primary:hover {
-    background: linear-gradient(135deg, #0d9488 0%, #14b8a6 55%, #10b981 100%);
+    background: linear-gradient(135deg, #0d6a63 0%, #0b8277 100%);
   }
   .dark .btn-primary {
-    background: linear-gradient(135deg, #0d9488 0%, #14b8a6 60%, #10b981 100%);
+    background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
     color: #ffffff;
-    box-shadow: 0 4px 14px -2px rgba(20, 184, 166, 0.32);
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
   }
   .dark .btn-primary:hover {
-    background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 60%, #34d399 100%);
+    background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%);
   }
 
-  /* Active segmented / nav gradient */
+  /* Active navigation & segmented control */
   .nav-active-gradient {
-    background: linear-gradient(135deg, #0f766e 0%, #0d9488 60%, #10b981 100%);
+    background-color: #0f766e;
     color: #ffffff;
-    box-shadow: 0 4px 12px -3px rgba(13, 148, 136, 0.35);
+  }
+  .dark .nav-active-gradient {
+    background-color: #0d9488;
+    color: #ffffff;
   }
 
-  /* Multi-stop gradient progress fill */
+  /* Clean progress bar fill */
   .gradient-bar {
-    background: linear-gradient(90deg, #0f766e 0%, #14b8a6 58%, #38bdf8 100%);
+    background: linear-gradient(90deg, #0f766e 0%, #14b8a6 100%);
   }
 
-  /* Refined secondary surface for inputs */
+  /* Calm input surface */
   .input-surface {
-    background-color: rgba(248, 250, 252, 0.9);
+    background-color: #ffffff;
     border-color: #cbd5e1;
     color: #0f172a;
   }
   .input-surface:focus {
     background-color: #ffffff;
-    border-color: #0d9488;
+    border-color: #0f766e;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
   }
   .dark .input-surface {
-    background-color: rgba(8, 18, 22, 0.9);
-    border-color: rgba(45, 212, 191, 0.16);
+    background-color: #091215;
+    border-color: rgba(255, 255, 255, 0.14);
     color: #f8fafc;
   }
   .dark .input-surface:focus {
-    background-color: rgba(11, 24, 29, 0.95);
+    background-color: #0b161a;
     border-color: #14b8a6;
     outline: none;
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.18);
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.16);
   }
 
   /* Hide scrollbar for swipeable photo sliders */
@@ -131,7 +296,7 @@
   }
 }
 
-/* Custom subtle scrollbars */
+/* Subtle scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -142,12 +307,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(13, 148, 136, 0.25);
+  background: rgba(100, 116, 139, 0.25);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(13, 148, 136, 0.45);
+  background: rgba(100, 116, 139, 0.45);
 }
 
 /* Print layout for Kwitansi Digital */

@@ -12,9 +12,14 @@ import {
   Clock3,
   AlertCircle,
 } from 'lucide-react';
+import QRCode from 'qrcode';
 import { PaymentLinkRecord } from '../types/kost';
 import { getPaymentLinkPublicInCloud, confirmPaymentLinkPublicInCloud } from '../services/kostFirestore';
-import { buildPdfReceiptInputFromLink, downloadReceiptPdf } from '../utils/receiptPdf';
+import {
+  buildPdfReceiptInputFromLink,
+  buildShareablePaymentUrl,
+  downloadReceiptPdf,
+} from '../utils/receiptPdf';
 import { buildWhatsAppUrl, formatDateID, formatIDR, formatMonthYear } from '../utils/format';
 import { PropertyLogo } from './PropertyLogo';
 
@@ -23,9 +28,9 @@ interface PublicPaymentViewProps {
 }
 
 const ACCENT_HEADER_CLASS = {
-  teal: 'from-[#06383B] via-[#0B5A5A] to-[#0D9488]',
-  navy: 'from-[#0F172A] via-[#1E3A8A] to-[#1D4ED8]',
-  slate: 'from-[#0F172A] via-[#334155] to-[#475569]',
+  teal: 'from-[#0c4a49] to-[#0f6b66]',
+  navy: 'from-[#0F172A] to-[#1E3A8A]',
+  slate: 'from-[#0F172A] to-[#334155]',
 };
 
 export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) => {
@@ -38,6 +43,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
   const [submittingConfirm, setSubmittingConfirm] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [pdfNotice, setPdfNotice] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
   const fetchLink = useCallback(async () => {
     setLoading(true);
@@ -61,6 +67,28 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
   useEffect(() => {
     fetchLink();
   }, [fetchLink]);
+
+  useEffect(() => {
+    if (!linkData || linkData.status !== 'Lunas' || linkData.receiptSnapshot?.showQrVerification === false) {
+      setQrDataUrl('');
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(buildShareablePaymentUrl(linkData.id), {
+      width: 140,
+      margin: 1,
+      color: { dark: '#0f172a', light: '#ffffff' },
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl('');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [linkData]);
 
   useEffect(() => {
     if (!copiedMsg) return;
@@ -115,7 +143,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F1FAF7] via-[#F7FCFA] to-[#E6F7F2] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#f6f9f9] flex items-center justify-center p-6">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-teal-700 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm text-slate-600">Memuat tautan pembayaran resmi...</p>
@@ -126,8 +154,8 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
 
   if (errorMsg || !linkData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#F1FAF7] via-[#F7FCFA] to-[#E6F7F2] flex items-center justify-center p-6">
-        <div className="max-w-md w-full rounded-2xl bg-white border border-teal-900/10 shadow-sm p-6 text-center space-y-4">
+      <div className="min-h-screen bg-[#f6f9f9] flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-xl bg-white border border-slate-200 shadow-sm p-6 text-center space-y-4">
           <AlertCircle className="w-10 h-10 text-rose-600 mx-auto" />
           <div className="space-y-1">
             <h1 className="font-display font-semibold text-lg text-slate-900">
@@ -174,11 +202,11 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
     : '';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F1FAF7] via-[#F7FCFA] to-[#E4F6F1] text-slate-900 py-8 px-4">
+    <div className="min-h-screen bg-[#f6f9f9] text-slate-900 py-8 px-4">
       <div className="max-w-2xl mx-auto space-y-5">
         {/* Header Card */}
         <div
-          className={`rounded-2xl bg-gradient-to-br ${ACCENT_HEADER_CLASS[accentTheme]} text-white p-6 shadow-md no-print`}
+          className={`rounded-xl bg-gradient-to-br ${ACCENT_HEADER_CLASS[accentTheme]} text-white p-6 shadow-sm no-print`}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -223,9 +251,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
         {isPaid ? (
           <div
             id="printable-receipt"
-            className="rounded-2xl bg-white border border-emerald-600/25 shadow-sm overflow-hidden"
+            className="rounded-xl bg-white border border-slate-200 shadow-sm overflow-hidden"
           >
-            <div className="px-6 py-4 bg-emerald-50 border-b border-emerald-200 flex flex-wrap items-center justify-between gap-3 no-print">
+            <div className="px-6 py-4 bg-emerald-50/70 border-b border-emerald-200/80 flex flex-wrap items-center justify-between gap-3 no-print">
               <div className="flex items-center gap-2 text-emerald-800">
                 <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 <div>
@@ -264,79 +292,82 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
               </div>
             )}
 
-            <div className="p-6 sm:p-8 space-y-6">
+            <div className="p-6 sm:p-9 space-y-6">
               <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-5">
                 <div className="flex items-center gap-3">
-                  {(snap?.showLogo ?? true) && <PropertyLogo className="w-10 h-10" />}
+                  {(snap?.showLogo ?? true) && <PropertyLogo className="w-9 h-9" />}
                   <div>
                     <h2 className="font-display font-bold text-lg text-slate-950">
                       {linkData.propertyName}
                     </h2>
                     {(snap?.showAddress ?? true) && linkData.propertyAddress && (
-                      <p className="text-xs text-slate-500 max-w-xs">
+                      <p className="text-xs text-slate-500 max-w-xs mt-0.5">
                         {linkData.propertyAddress}
                       </p>
                     )}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[11px] uppercase tracking-wider font-semibold text-teal-700">
+                  <p className="text-xs uppercase tracking-wider font-bold text-teal-700">
                     {snap?.title || 'KWITANSI SEWA RESMI'}
+                  </p>
+                  <p className="font-mono-num text-xs font-semibold text-slate-900 mt-1">
+                    {linkData.invoiceNo}
                   </p>
                   {snap?.subtitle && (
                     <p className="text-[11px] text-slate-500 mt-0.5">{snap.subtitle}</p>
                   )}
-                  <p className="font-mono-num text-xs font-semibold text-slate-900 mt-1">
-                    {linkData.invoiceNo}
-                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-slate-500">Diterima Dari</p>
-                  <p className="font-semibold text-slate-950 mt-0.5">{linkData.tenantName}</p>
-                  <p className="font-mono-num text-xs text-slate-600 mt-0.5">
+              <div className="grid grid-cols-2 gap-6 text-sm border-b border-slate-200 pb-5">
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-500">Penyewa &amp; Unit</p>
+                  <p className="font-semibold text-slate-950 text-base">
+                    {linkData.tenantName}
+                  </p>
+                  <p className="text-xs text-slate-600">
                     {linkData.roomName || `Kamar ${linkData.roomNumber}`}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs text-slate-500">Periode Tagihan</p>
-                  <p className="font-semibold text-slate-950 mt-0.5">
+                <div className="text-right space-y-1">
+                  <p className="text-xs text-slate-500">Periode &amp; Pembayaran</p>
+                  <p className="font-semibold text-slate-950 text-base">
                     {formatMonthYear(linkData.month)}
                   </p>
-                  <p className="font-mono-num text-xs text-slate-600 mt-0.5">
-                    Dibayar: {formatDateID(linkData.paidDate)}
+                  <p className="font-mono-num text-xs text-slate-600">
+                    {formatDateID(linkData.paidDate)} ·{' '}
+                    {linkData.method || linkData.preferredMethod || 'Transfer Bank'}
                   </p>
                 </div>
               </div>
 
-              <div className="border-t border-b border-slate-200 py-4 space-y-2.5 text-sm">
+              <div className="border-b border-slate-200 pb-5 space-y-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-700">
                     Sewa {linkData.roomName || `Kamar ${linkData.roomNumber}`} (
                     {formatMonthYear(linkData.month)})
                   </span>
-                  <span className="font-mono-num font-medium text-slate-950">
+                  <span className="font-mono-num font-semibold text-slate-950">
                     {formatIDR(linkData.amount)}
                   </span>
                 </div>
                 {lateFee > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-slate-700">Denda Keterlambatan</span>
-                    <span className="font-mono-num font-medium text-rose-700">
+                    <span className="font-mono-num font-semibold text-rose-700">
                       {formatIDR(lateFee)}
                     </span>
                   </div>
                 )}
                 {(snap?.includedItemsText ||
                   'WiFi 100 Mbps, Air Bersih & Kebersihan Area Bersama') && (
-                  <div className="flex items-center justify-between text-xs text-slate-500">
+                  <div className="flex items-center justify-between gap-4 text-xs text-slate-500">
                     <span>
                       {snap?.includedItemsText ||
                         'WiFi 100 Mbps, Air Bersih & Kebersihan Area Bersama'}
                     </span>
-                    <span>Termasuk</span>
+                    <span className="shrink-0">Termasuk</span>
                   </div>
                 )}
                 {snap?.showDepositInfo &&
@@ -344,41 +375,50 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                   snap.depositAmount > 0 && (
                     <div className="flex items-center justify-between text-xs text-slate-600">
                       <span>
-                        Status Deposit ({snap.depositStatus ?? 'Disimpan'})
+                        Uang Jaminan / Deposit ({snap.depositStatus ?? 'Disimpan'})
                       </span>
                       <span className="font-mono-num">{formatIDR(snap.depositAmount)}</span>
                     </div>
                   )}
                 {snap?.customRoomNote && (
-                  <p className="text-xs italic text-slate-600 pt-1">
-                    Catatan Kamar: {snap.customRoomNote}
+                  <p className="text-xs text-slate-500 pt-1">
+                    Catatan: {snap.customRoomNote}
                   </p>
                 )}
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-slate-500">Metode Pembayaran</p>
-                  <p className="text-sm font-medium text-slate-800 mt-0.5">
-                    {linkData.method || linkData.preferredMethod || 'Transfer Bank'}
-                  </p>
+              <div className="flex items-end justify-between gap-4">
+                <div className="inline-flex items-center gap-1.5 text-emerald-700 text-xs font-semibold">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>LUNAS · TERVERIFIKASI</span>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-slate-500">Total Dibayarkan</p>
-                  <p className="font-mono-num text-2xl font-bold text-slate-950">
+                  <p className="font-mono-num text-2xl sm:text-3xl font-bold text-slate-950 mt-0.5">
                     {formatIDR(grandTotal)}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
-                <div className="inline-flex items-center gap-1.5 text-emerald-700 text-xs font-semibold">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>LUNAS · TERVERIFIKASI</span>
-                </div>
-                <div className="text-right text-xs text-slate-500">
+              <div className="pt-5 border-t border-slate-200 flex items-center justify-between gap-4">
+                {qrDataUrl ? (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={qrDataUrl}
+                      alt={`QR Verifikasi ${linkData.invoiceNo}`}
+                      className="w-16 h-16 rounded border border-slate-200 p-0.5 bg-white shrink-0"
+                    />
+                    <div className="text-[11px] text-slate-500 leading-snug">
+                      <p className="font-semibold text-slate-700">Cek Keaslian &amp; PDF</p>
+                      <p>Scan QR untuk buka kwitansi &amp; unduh salinan PDF</p>
+                    </div>
+                  </div>
+                ) : (
+                  <span />
+                )}
+                <div className="text-right text-xs text-slate-500 shrink-0">
                   <p>{snap?.signerLabel || 'Pengelola Properti'}</p>
-                  <p className="font-semibold text-slate-800 mt-0.5">{linkData.adminName}</p>
+                  <p className="font-semibold text-slate-900 mt-3">{linkData.adminName}</p>
                 </div>
               </div>
 
@@ -392,7 +432,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
         ) : (
           <div className="space-y-5 no-print">
             {/* Invoice Breakdown Card */}
-            <div className="rounded-2xl bg-white border border-teal-900/10 shadow-sm p-6 space-y-4">
+            <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <div>
                   <p className="text-xs text-slate-500">Tagihan Untuk</p>
@@ -449,9 +489,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
               </p>
             </div>
 
-            {/* Payment Channels (Bank Transfer, QRIS, External Link) */}
-            <div className="rounded-2xl bg-white border border-teal-900/10 shadow-sm p-6 space-y-5">
-              <div className="flex items-center justify-between gap-2">
+            {/* Payment Channels */}
+            <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-5">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <h2 className="font-display font-semibold text-base text-slate-900">
                   Pilihan Saluran Pembayaran
                 </h2>
@@ -461,7 +501,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
               </div>
 
               {(linkData.bankName || linkData.accountNumber) && (
-                <div className="p-4 rounded-xl bg-teal-50/70 border border-teal-700/15 space-y-2">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2 text-teal-800">
                     <Landmark className="w-4 h-4" />
                     <span className="text-xs font-semibold uppercase tracking-wider">
@@ -485,7 +525,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                         onClick={() =>
                           handleCopyAccount(linkData.accountNumber!, 'Nomor rekening')
                         }
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-teal-700/20 text-xs font-medium text-teal-800 hover:bg-teal-50"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 hover:border-teal-600 hover:text-teal-800"
                       >
                         <Copy className="w-3.5 h-3.5" />
                         <span>Salin No. Rek</span>
@@ -496,7 +536,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
               )}
 
               {linkData.qrisImageUrl && (
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3 text-center">
+                <div className="pt-4 border-t border-slate-100 space-y-3 text-center">
                   <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700">
                     <QrCode className="w-4 h-4 text-teal-700" />
                     <span>Scan QRIS Pembayaran</span>
@@ -520,7 +560,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                   href={linkData.externalPaymentLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-teal-700/25 bg-teal-50/60 hover:bg-teal-100/70 text-sm font-semibold text-teal-800 transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 hover:border-teal-600 text-sm font-semibold text-teal-800 transition-colors"
                 >
                   <ExternalLink className="w-4 h-4" />
                   <span>Buka Tautan Pembayaran Khusus Kamar</span>
@@ -530,7 +570,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
 
             {/* Tenant Payment Confirmation Form OR Pending Status */}
             {isPendingVerify ? (
-              <div className="rounded-2xl bg-amber-50 border border-amber-300/80 p-6 space-y-4">
+              <div className="rounded-xl bg-amber-50 border border-amber-300/80 p-6 space-y-4">
                 <div className="flex items-start gap-3">
                   <Clock3 className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
                   <div className="space-y-1">
@@ -574,7 +614,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
             ) : (
               <form
                 onSubmit={handleConfirmPayment}
-                className="rounded-2xl bg-white border border-teal-900/10 shadow-sm p-6 space-y-4"
+                className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-4"
               >
                 <div>
                   <h3 className="font-display font-semibold text-base text-slate-900">

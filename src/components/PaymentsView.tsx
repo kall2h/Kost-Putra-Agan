@@ -37,6 +37,7 @@ import {
   renderMessageTemplate,
 } from '../utils/messageTemplates';
 import { buildShareablePaymentUrl } from '../utils/receiptPdf';
+import { CurrencyInput } from './CurrencyInput';
 
 interface PaymentsViewProps {
   payments: PaymentRecord[];
@@ -193,7 +194,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
     <div className="space-y-5">
       {/* Top Metric Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-xl gradient-hero-card border border-teal-500/30">
+        <div className="p-5 rounded-xl gradient-hero-card border border-teal-800/20">
           <p className="text-xs text-teal-100">
             Terkumpul ({formatMonthYear(selectedMonth)})
           </p>
@@ -202,7 +203,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           </p>
         </div>
 
-        <div className="p-5 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
+        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Menunggu Pelunasan
           </p>
@@ -211,7 +212,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           </p>
         </div>
 
-        <div className="p-5 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
+        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
           <p className="text-xs text-slate-500 dark:text-slate-400">Tingkat Kolektibilitas</p>
           <div className="flex items-baseline gap-2 mt-1.5">
             <p className="font-mono-num text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">
@@ -231,7 +232,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             value={selectedMonth}
             onChange={(e) => onChangeMonth(e.target.value)}
             aria-label="Pilih Periode Bulan"
-            className="px-3.5 py-2 rounded-lg surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] text-sm font-medium text-slate-900 dark:text-white focus:outline-none focus:border-teal-600"
+            className="px-3.5 py-2 rounded-lg input-surface border text-sm font-medium"
           >
             {monthOptions.map((m) => (
               <option key={m} value={m}>
@@ -240,13 +241,13 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             ))}
           </select>
 
-          <div className="flex items-center gap-1 p-1 rounded-lg surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
+          <div className="flex items-center gap-1 p-1 rounded-lg surface-card border border-slate-200/90 dark:border-white/[0.08]">
             {(['all', 'Belum Bayar', 'Lunas'] as const).map((status) => (
               <button
                 key={status}
                 type="button"
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-colors whitespace-nowrap ${
                   statusFilter === status
                     ? 'nav-active-gradient text-white'
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
@@ -263,7 +264,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
               setGenerateMonth(getNextMonthISO(selectedMonth));
               setShowGenerator((v) => !v);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-teal-700/20 dark:border-teal-400/25 bg-gradient-to-r from-teal-50/90 to-emerald-50/70 dark:from-teal-500/10 dark:to-emerald-500/10 text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg surface-card border border-slate-200/90 dark:border-white/[0.12] text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition-colors whitespace-nowrap"
           >
             <CalendarPlus className="w-3.5 h-3.5" />
             <span>Buat Tagihan Bulanan</span>
@@ -272,7 +273,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           <button
             type="button"
             onClick={onOpenReceiptFormat}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.15] text-slate-700 dark:text-slate-200 hover:border-teal-600 text-xs font-medium transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg surface-card border border-slate-200/90 dark:border-white/[0.12] text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition-colors whitespace-nowrap"
           >
             <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
             <span>
@@ -288,7 +289,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Cari nama, kamar, no. invoice..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-teal-600"
+            className="w-full pl-9 pr-3 py-2 rounded-lg input-surface border text-sm placeholder:text-slate-400"
           />
         </div>
       </div>
@@ -297,7 +298,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
       {showGenerator && (
         <form
           onSubmit={handleGenerateSubmit}
-          className="p-4 sm:p-5 rounded-xl bg-gradient-to-r from-teal-50/90 via-white to-emerald-50/70 dark:from-teal-950/50 dark:via-[#0B1C20] dark:to-emerald-950/30 border border-teal-600/25 dark:border-teal-400/25 flex flex-wrap items-center justify-between gap-4"
+          className="p-4 sm:p-5 rounded-xl surface-card border border-teal-600/30 dark:border-teal-400/30 flex flex-wrap items-center justify-between gap-4"
         >
           <div className="space-y-1">
             <p className="font-display font-semibold text-sm text-slate-900 dark:text-white">
@@ -341,8 +342,8 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
       )}
 
       {/* Ledger Table */}
-      <div className="rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] overflow-hidden">
-        <div className="px-5 py-4 border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] flex items-center justify-between">
+      <div className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-200/80 dark:border-white/[0.07] flex items-center justify-between">
           <h2 className="font-display font-semibold text-sm sm:text-base text-slate-900 dark:text-white">
             Pembayaran Sewa — {formatMonthYear(selectedMonth)}
           </h2>
@@ -363,7 +364,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             <button
               type="button"
               onClick={onOpenAddPayment}
-              className="px-4 py-2 rounded-lg btn-primary text-xs font-medium transition-all"
+              className="px-4 py-2 rounded-lg btn-primary text-xs font-medium transition-colors"
             >
               Catat Pembayaran
             </button>
@@ -372,17 +373,17 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                  <th className="py-3 px-5">Penyewa</th>
-                  <th className="py-3 px-4">Kamar</th>
-                  <th className="py-3 px-4 text-right">Total Tagihan</th>
-                  <th className="py-3 px-4">Tanggal / Tempo</th>
-                  <th className="py-3 px-4">Metode</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-5 text-right">Aksi</th>
+                <tr className="border-b border-slate-200/80 dark:border-white/[0.08] text-xs font-medium text-slate-500 dark:text-slate-400">
+                  <th className="py-3.5 px-5">Penyewa</th>
+                  <th className="py-3.5 px-4">Kamar</th>
+                  <th className="py-3.5 px-4 text-right">Total Tagihan</th>
+                  <th className="py-3.5 px-4">Tanggal / Tempo</th>
+                  <th className="py-3.5 px-4">Metode</th>
+                  <th className="py-3.5 px-4">Status</th>
+                  <th className="py-3.5 px-5 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-teal-900/[0.05] dark:divide-white/[0.05] text-sm">
+              <tbody className="divide-y divide-slate-200/70 dark:divide-white/[0.06] text-sm">
                 {filtered.map((pay) => {
                   const isPaid = pay.status === 'Lunas';
                   const roomObj = rooms.find((r) => r.number === pay.roomNumber);
@@ -421,8 +422,8 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
 
                   return (
                     <React.Fragment key={pay.id}>
-                      <tr className="hover:bg-teal-500/[0.04] transition-colors">
-                        <td className="py-3 px-5">
+                      <tr className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors">
+                        <td className="py-3.5 px-5">
                           <p className="font-medium text-slate-900 dark:text-white">
                             {pay.tenantName}
                           </p>
@@ -430,10 +431,10 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                             {pay.invoiceNo}
                           </p>
                         </td>
-                        <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-200">
+                        <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-200">
                           {roomObj ? getRoomDisplayName(roomObj) : `Kamar ${pay.roomNumber}`}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono-num">
+                        <td className="py-3.5 px-4 text-right font-mono-num">
                           <p className="font-medium text-slate-900 dark:text-white">
                             {formatIDR(grandTotal)}
                           </p>
@@ -443,7 +444,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                             </p>
                           )}
                         </td>
-                        <td className="py-3 px-4 font-mono-num text-xs">
+                        <td className="py-3.5 px-4 font-mono-num text-xs">
                           {isPaid ? (
                             <span className="text-slate-600 dark:text-slate-300">
                               {formatDateID(pay.paidDate)}
@@ -462,12 +463,12 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400">
+                        <td className="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">
                           {pay.method ?? linkRecord?.confirmationMethod ?? '—'}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-3.5 px-4">
                           {isPaid ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
                               <CheckCircle2 className="w-3.5 h-3.5" />
                               <span>Lunas</span>
                             </span>
@@ -490,13 +491,13 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-5 text-right">
+                        <td className="py-3.5 px-5 text-right">
                           {isPaid ? (
                             <div className="inline-flex items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => onDownloadPdfReceipt(pay)}
-                                className="p-1.5 rounded-lg border border-teal-900/10 dark:border-teal-400/15 bg-white/80 dark:bg-white/[0.04] hover:bg-teal-50 dark:hover:bg-white/[0.08] text-teal-700 dark:text-teal-300 transition-colors"
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.08] text-teal-700 dark:text-teal-300 transition-colors"
                                 title="Unduh Kwitansi PDF"
                                 aria-label={`Unduh PDF ${pay.invoiceNo}`}
                               >
@@ -505,7 +506,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onOpenReceipt(pay)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal-900/10 dark:border-teal-400/15 bg-white/80 dark:bg-white/[0.04] hover:bg-teal-50 dark:hover:bg-white/[0.08] text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors whitespace-nowrap"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.08] text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors whitespace-nowrap"
                               >
                                 <ReceiptText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                                 <span>Kwitansi</span>
@@ -520,7 +521,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                                     ? setEditingPaymentId(null)
                                     : startEditPayment(pay)
                                 }
-                                className="p-1.5 rounded-lg border border-teal-900/10 dark:border-teal-400/15 text-slate-500 hover:text-teal-700 dark:text-slate-400 dark:hover:text-teal-300 transition-colors"
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
                                 title="Atur denda / nominal tagihan"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
@@ -528,7 +529,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onCreateAndCopyPaymentLink(pay, roomObj)}
-                                className="p-1.5 rounded-lg border border-teal-900/10 dark:border-teal-400/15 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-500/10 transition-colors"
+                                className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-teal-700 dark:text-teal-300 hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-colors"
                                 title={
                                   pay.paymentLinkId
                                     ? 'Salin Link Pembayaran Bank/QRIS'
@@ -545,7 +546,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                                     onClick={() =>
                                       onCopyReminder(roomObj, grandTotal, pay)
                                     }
-                                    className="p-1.5 rounded-lg border border-teal-900/10 dark:border-teal-400/15 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+                                    className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
                                     title="Salin pesan pengingat WA"
                                     aria-label="Salin pengingat WA"
                                   >
@@ -556,7 +557,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                                       href={waUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="p-1.5 rounded-lg border border-teal-700/20 dark:border-teal-400/25 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-500/10 transition-colors"
+                                      className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-teal-700 dark:text-teal-300 hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-colors"
                                       title="Buka & kirim langsung ke WhatsApp penyewa"
                                       aria-label={`Kirim WA ke ${pay.tenantName}`}
                                     >
@@ -568,7 +569,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onMarkPaid(pay.id)}
-                                className="px-3 py-1.5 rounded-lg btn-primary text-xs font-medium transition-all whitespace-nowrap"
+                                className="px-3 py-1.5 rounded-lg btn-primary text-xs font-medium transition-colors whitespace-nowrap"
                               >
                                 {isPendingVerify ? 'Verifikasi & PDF' : 'Tandai Lunas'}
                               </button>
@@ -577,33 +578,31 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                         </td>
                       </tr>
                       {isEditingThis && (
-                        <tr className="bg-teal-50/50 dark:bg-teal-500/[0.06]">
+                        <tr className="bg-slate-50 dark:bg-white/[0.03]">
                           <td colSpan={7} className="px-5 py-3">
                             <div className="flex flex-wrap items-end gap-3">
                               <div>
                                 <label className="block text-[11px] text-slate-500 mb-1">
                                   Sewa Dasar (Rp)
                                 </label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={25000}
+                                <CurrencyInput
+                                  compact
                                   value={editAmount}
-                                  onChange={(e) => setEditAmount(Number(e.target.value))}
-                                  className="w-36 px-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
+                                  onChange={setEditAmount}
+                                  aria-label="Sewa Dasar (Rp)"
+                                  className="w-40 pr-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
                                 />
                               </div>
                               <div>
                                 <label className="block text-[11px] text-slate-500 mb-1">
                                   Denda Telat (Rp)
                                 </label>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={10000}
+                                <CurrencyInput
+                                  compact
                                   value={editLateFee}
-                                  onChange={(e) => setEditLateFee(Number(e.target.value))}
-                                  className="w-32 px-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
+                                  onChange={setEditLateFee}
+                                  aria-label="Denda Telat (Rp)"
+                                  className="w-36 pr-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
                                 />
                               </div>
                               <div className="flex-1 min-w-[180px]">
@@ -623,7 +622,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => setEditingPaymentId(null)}
-                                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] text-xs"
+                                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs"
                                 >
                                   Batal
                                 </button>

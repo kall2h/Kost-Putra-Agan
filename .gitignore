@@ -1,8 +1,26 @@
+# Dependencies & Build
 node_modules/
 build/
 dist/
 coverage/
-.DS_Store
+*.tsbuildinfo
+
+# Logs & OS
 *.log
-.env*
+.DS_Store
+Thumbs.db
+
+# Environment & Secrets
+.env
+.env.*
 !.env.example
+
+# Hosting / Cloud Cache
+.firebase/
+.vercel/
+.netlify/
+
+# Editor (keep shared team config)
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

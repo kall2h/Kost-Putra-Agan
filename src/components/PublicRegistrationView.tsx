@@ -102,7 +102,7 @@ export const PublicRegistrationView: React.FC<PublicRegistrationViewProps> = ({
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 transition-colors whitespace-nowrap shrink-0"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>{isAdminLoggedIn ? 'Kembali ke Dashboard' : 'Portal Pengelola'}</span>
+          <span>{isAdminLoggedIn ? 'Kembali ke Ringkasan' : 'Portal Pengelola'}</span>
         </button>
       </header>
 

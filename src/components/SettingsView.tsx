@@ -85,7 +85,16 @@ interface SettingsViewProps {
   onSaveSettings: (updated: PropertySettings) => Promise<void> | void;
   onResetDemo: () => Promise<void> | void;
   onRemoveRegisteredAdmin: (uid: string) => Promise<void>;
-  onAddAdminInvite: (email: string, name: string) => Promise<void>;
+  onUpdateAdminRole: (
+    uid: string,
+    name: string,
+    role: 'owner' | 'staff'
+  ) => Promise<void>;
+  onAddAdminInvite: (
+    email: string,
+    name: string,
+    role: 'owner' | 'staff'
+  ) => Promise<void>;
   onRemoveAdminInvite: (email: string) => Promise<void>;
   onEditRoomType: (roomType: RoomTypeConfig) => void;
   onOpenReceiptFormat: () => void;
@@ -105,6 +114,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onSaveSettings,
   onResetDemo,
   onRemoveRegisteredAdmin,
+  onUpdateAdminRole,
   onAddAdminInvite,
   onRemoveAdminInvite,
   onEditRoomType,
@@ -116,6 +126,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [confirmReset, setConfirmReset] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteName, setInviteName] = useState('');
+  const [inviteRole, setInviteRole] = useState<'owner' | 'staff'>('staff');
   const [inviting, setInviting] = useState(false);
   const [uploadingQris, setUploadingQris] = useState(false);
   const [typeImgErrors, setTypeImgErrors] = useState<Record<string, boolean>>({});
@@ -156,9 +167,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     if (!inviteEmail.trim() || !inviteName.trim()) return;
     setInviting(true);
     try {
-      await onAddAdminInvite(inviteEmail.trim().toLowerCase(), inviteName.trim());
+      await onAddAdminInvite(
+        inviteEmail.trim().toLowerCase(),
+        inviteName.trim(),
+        inviteRole
+      );
       setInviteEmail('');
       setInviteName('');
+      setInviteRole('staff');
     } finally {
       setInviting(false);
     }
@@ -174,13 +190,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-      {/* Left 7 Cols: Settings Form */}
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
+      {/* Left 7 Cols: Clean Flat Settings Form */}
       <form
         onSubmit={handleSubmit}
-        className="xl:col-span-7 rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-5 sm:p-6 space-y-6"
+        className="xl:col-span-7 h-full rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between gap-5"
       >
-        <div className="border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] pb-3">
+        <div className="border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
           <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
             Profil &amp; Konfigurasi Properti
           </h2>
@@ -228,22 +244,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           />
         </div>
 
-        {/* Saluran Pembayaran Default (Bank Transfer, QRIS & Link) */}
-        <div className="p-4 rounded-xl bg-white/70 dark:bg-[#081417] border border-teal-900/[0.08] dark:border-teal-400/[0.12] space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-200">
-                Saluran Pembayaran Default (Link Tagihan &amp; WA)
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                Ditampilkan otomatis di halaman Link Pembayaran penyewa &amp; variabel pesan WA
-              </p>
-            </div>
+        {/* Saluran Pembayaran Default */}
+        <div className="pt-5 border-t border-slate-200/80 dark:border-white/[0.07] space-y-4">
+          <div>
+            <h3 className="font-display text-sm font-semibold text-slate-900 dark:text-white">
+              Saluran Pembayaran Default
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Ditampilkan otomatis di halaman Link Pembayaran penyewa &amp; variabel pesan WA
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                 Nama Bank
               </label>
               <input
@@ -256,7 +270,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                 Nomor Rekening
               </label>
               <input
@@ -271,7 +285,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                 Atas Nama Rekening
               </label>
               <input
@@ -289,7 +303,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                 Ringkasan Teks Rekening (untuk WA)
               </label>
               <input
@@ -304,7 +318,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-300 mb-1">
+              <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1">
                 Link Payment Gateway / E-Wallet (opsional)
               </label>
               <input
@@ -320,12 +334,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           </div>
 
-          {/* QRIS Upload / URL */}
-          <div className="space-y-2 pt-1 border-t border-teal-900/[0.06] dark:border-white/[0.06]">
+          {/* QRIS Upload */}
+          <div className="space-y-2.5 pt-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-1.5">
                 <QrCode className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                   Gambar QRIS Properti (opsional)
                 </span>
               </div>
@@ -359,16 +373,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   type="button"
                   disabled={uploadingQris}
                   onClick={() => qrisInputRef.current?.click()}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-teal-700/25 dark:border-teal-400/25 text-[11px] font-medium text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-500/10"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-white/[0.12] text-xs font-medium text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300"
                 >
-                  <Upload className="w-3 h-3" />
+                  <Upload className="w-3.5 h-3.5" />
                   <span>{uploadingQris ? 'Memproses...' : 'Unggah Foto QRIS'}</span>
                 </button>
                 {form.qrisImageUrl && (
                   <button
                     type="button"
                     onClick={() => setForm((prev) => ({ ...prev, qrisImageUrl: '' }))}
-                    className="text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:underline"
+                    className="text-xs font-medium text-rose-600 dark:text-rose-400 hover:underline"
                   >
                     Hapus QRIS
                   </button>
@@ -377,25 +391,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
 
             {form.qrisImageUrl && (
-              <div className="flex items-center gap-3 p-2.5 rounded-lg bg-white dark:bg-[#050E11] border border-teal-900/[0.08]">
+              <div className="flex items-center gap-3 pt-1">
                 <img
                   src={form.qrisImageUrl}
                   alt="Preview QRIS"
                   referrerPolicy="no-referrer"
-                  className="w-16 h-16 rounded object-contain bg-white border border-slate-200"
+                  className="w-16 h-16 rounded-lg object-contain bg-white border border-slate-200"
                 />
-                <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                <div className="text-xs text-slate-500 dark:text-slate-400">
                   <p className="font-medium text-slate-800 dark:text-slate-200">
                     QRIS Terpasang
                   </p>
-                  <p>Akan otomatis ditampilkan pada halaman Link Pembayaran penyewa.</p>
+                  <p>Ditampilkan otomatis pada halaman Link Pembayaran penyewa.</p>
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="pt-5 border-t border-slate-200/80 dark:border-white/[0.07] grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
               Nama Pengelola
@@ -448,7 +462,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
 
         {/* Theme Switcher */}
-        <div className="pt-2 border-t border-teal-900/[0.07] dark:border-teal-400/[0.1] space-y-3">
+        <div className="pt-5 border-t border-slate-200/80 dark:border-white/[0.07] space-y-3">
           <label className="block text-xs font-medium text-slate-600 dark:text-slate-300">
             Tema Tampilan Antarmuka
           </label>
@@ -456,31 +470,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="button"
               onClick={() => handleThemeSwitch('light')}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                 form.theme === 'light'
                   ? 'nav-active-gradient border-transparent text-white'
-                  : 'bg-white/60 dark:bg-[#081316] border-teal-900/10 dark:border-teal-400/15 text-slate-700 dark:text-slate-300 hover:bg-teal-50/70 dark:hover:bg-white/[0.05]'
+                  : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05]'
               }`}
             >
               <Sun className="w-4 h-4" />
-              <span>Terang (Gradient)</span>
+              <span>Tema Terang</span>
             </button>
             <button
               type="button"
               onClick={() => handleThemeSwitch('dark')}
-              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+              className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                 form.theme === 'dark'
                   ? 'nav-active-gradient border-transparent text-white'
-                  : 'bg-white/60 dark:bg-[#081316] border-teal-900/10 dark:border-teal-400/15 text-slate-700 dark:text-slate-300 hover:bg-teal-50/70 dark:hover:bg-white/[0.05]'
+                  : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.12] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05]'
               }`}
             >
               <Moon className="w-4 h-4" />
-              <span>Gelap (Emerald)</span>
+              <span>Tema Gelap</span>
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-teal-900/[0.07] dark:border-teal-400/[0.1]">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200/80 dark:border-white/[0.07]">
           {!confirmReset ? (
             <button
               type="button"
@@ -508,7 +522,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <button
                 type="button"
                 onClick={() => setConfirmReset(false)}
-                className="px-2.5 py-1 rounded border border-slate-200 dark:border-white/[0.1] text-xs"
+                className="px-2.5 py-1 rounded border border-slate-200 dark:border-white/[0.12] text-xs"
               >
                 Batal
               </button>
@@ -517,7 +531,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <button
             type="submit"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg btn-primary text-sm font-medium transition-all"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg btn-primary text-sm font-medium transition-colors"
           >
             <Save className="w-4 h-4" />
             <span>Simpan Pengaturan</span>
@@ -525,11 +539,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </form>
 
-      {/* Right 5 Cols: Otomasi Kwitansi PDF + Panel Tipe Kamar + Multi-Admin + Promo */}
-      <div className="xl:col-span-5 space-y-6">
+      {/* Right 5 Cols */}
+      <div className="xl:col-span-5 flex flex-col gap-5">
         {/* Format & Otomasi Kwitansi PDF */}
-        <section className="rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-5 sm:p-6 space-y-3.5">
-          <div className="flex items-start justify-between gap-3 border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] pb-3">
+        <section className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 space-y-4">
+          <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
             <div>
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-teal-600 dark:text-teal-400" />
@@ -544,21 +558,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="button"
               onClick={onOpenReceiptFormat}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg btn-primary text-xs font-medium shrink-0"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg btn-primary text-xs font-medium shrink-0"
             >
               <Pencil className="w-3 h-3" />
               <span>Edit Format</span>
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-2.5 text-xs">
-            <div className="p-2.5 rounded-lg bg-white/70 dark:bg-[#081417] border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Judul Dokumen</p>
+
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">Judul Dokumen</p>
               <p className="font-semibold text-slate-900 dark:text-white truncate mt-0.5">
                 {receiptTemplate.title}
               </p>
             </div>
-            <div className="p-2.5 rounded-lg bg-white/70 dark:bg-[#081417] border border-teal-900/[0.08] dark:border-teal-400/[0.12]">
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">Otomasi Lunas</p>
+            <div>
+              <p className="text-slate-500 dark:text-slate-400">Otomasi Lunas</p>
               <p className="font-semibold text-teal-700 dark:text-teal-300 truncate mt-0.5">
                 {receiptTemplate.autoGeneratePdfOnPaid
                   ? 'Auto-Unduh PDF Aktif'
@@ -568,9 +583,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </section>
 
-        {/* Panel & Harga Tipe Kamar (TIPE A / B / C) */}
-        <section className="rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-5 sm:p-6 space-y-4">
-          <div className="border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] pb-3">
+        {/* Panel & Harga Tipe Kamar */}
+        <section className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 space-y-3">
+          <div className="border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
@@ -582,18 +597,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="divide-y divide-slate-200/70 dark:divide-white/[0.06]">
             {activeRoomTypes.map((rt) => {
               const hasErr = typeImgErrors[rt.id];
               const panelName = rt.displayName?.trim() || rt.tier;
               const coverImg = rt.images?.[0]?.url || rt.imageUrl;
               const photoCount = rt.images?.length || 1;
               return (
-                <div
-                  key={rt.id}
-                  className="p-3 rounded-xl bg-white/70 dark:bg-[#081417] border border-teal-900/[0.08] dark:border-teal-400/[0.12] flex items-center gap-3"
-                >
-                  <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-900 shrink-0 border border-teal-900/[0.08]">
+                <div key={rt.id} className="py-3 first:pt-1 last:pb-1 flex items-center gap-3">
+                  <div className="w-16 h-12 rounded-lg overflow-hidden bg-slate-900 shrink-0 border border-slate-200/80 dark:border-white/[0.08]">
                     {!hasErr && coverImg ? (
                       <img
                         src={coverImg}
@@ -605,14 +617,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#06383B] to-[#0D9488] text-white">
+                      <div className="w-full h-full flex items-center justify-center bg-teal-900 text-white">
                         <Building2 className="w-4 h-4" />
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                      {panelName.toUpperCase()} · {rt.subtitle}
+                      {panelName} · {rt.subtitle}
                     </p>
                     <p className="font-mono-num text-xs text-teal-700 dark:text-teal-300 font-medium mt-0.5">
                       {formatIDR(rt.monthlyRate)}/bln · {rt.areaSqm} m² · {photoCount} foto
@@ -624,10 +636,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <button
                     type="button"
                     onClick={() => onEditRoomType(rt)}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-teal-700/20 dark:border-teal-400/25 text-xs font-medium text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-500/10 shrink-0 transition-colors"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs font-medium text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 shrink-0 transition-colors"
                   >
                     <Pencil className="w-3 h-3" />
-                    <span>Modifikasi</span>
+                    <span>Edit</span>
                   </button>
                 </div>
               );
@@ -636,8 +648,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </section>
 
         {/* Multi-Admin Team Access */}
-        <section className="rounded-xl surface-card border border-teal-900/[0.08] dark:border-teal-400/[0.12] p-5 sm:p-6 space-y-4">
-          <div className="border-b border-teal-900/[0.07] dark:border-teal-400/[0.1] pb-3">
+        <section className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 space-y-4">
+          <div className="border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" />
               <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
@@ -645,20 +657,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </h2>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Daftar akun pengelola aktif dan undangan email Google
+              Daftar akun pengelola aktif ({registeredAdmins.length}) dan undangan email Google
             </p>
           </div>
 
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Admin Terdaftar ({registeredAdmins.length})
-            </p>
+          <div className="divide-y divide-slate-200/70 dark:divide-white/[0.06]">
             {registeredAdmins.map((adm) => {
               const isSelf = adm.uid === currentUserUid;
               return (
                 <div
                   key={adm.uid}
-                  className="px-3.5 py-2.5 rounded-lg bg-white/70 dark:bg-[#081417] border border-teal-900/[0.08] dark:border-teal-400/[0.12] flex items-center justify-between gap-2"
+                  className="py-2.5 first:pt-0 flex items-center justify-between gap-2"
                 >
                   <div className="min-w-0">
                     <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
@@ -673,14 +682,34 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       {adm.role === 'owner' ? 'Pemilik' : 'Admin'}
                     </span>
                     {!isSelf && (
-                      <button
-                        type="button"
-                        onClick={() => onRemoveRegisteredAdmin(adm.uid)}
-                        className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
-                        title="Hapus akses admin"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onUpdateAdminRole(
+                              adm.uid,
+                              adm.name,
+                              adm.role === 'owner' ? 'staff' : 'owner'
+                            )
+                          }
+                          className="px-2 py-1 rounded-md border border-slate-200 dark:border-white/[0.12] text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
+                          title={
+                            adm.role === 'owner'
+                              ? 'Ubah menjadi Admin biasa'
+                              : 'Promosikan sebagai Pemilik Penuh'
+                          }
+                        >
+                          {adm.role === 'owner' ? 'Set Admin' : 'Set Pemilik'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onRemoveRegisteredAdmin(adm.uid)}
+                          className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
+                          title="Hapus akses admin"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -690,11 +719,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             {adminInvites.map((inv) => (
               <div
                 key={inv.email}
-                className="px-3.5 py-2.5 rounded-lg bg-white/50 dark:bg-[#081417] border border-dashed border-teal-700/25 dark:border-teal-400/25 flex items-center justify-between gap-2"
+                className="py-2.5 flex items-center justify-between gap-2"
               >
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                    {inv.name} (Undangan)
+                    {inv.name} ·{' '}
+                    <span className="text-teal-700 dark:text-teal-300 font-medium">
+                      {inv.role === 'owner' ? 'Pemilik' : 'Admin'}
+                    </span>{' '}
+                    (Menunggu Login)
                   </p>
                   <p className="font-mono-num text-[11px] text-slate-500 dark:text-slate-400 truncate">
                     {inv.email}
@@ -714,16 +747,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <form
             onSubmit={handleInviteSubmit}
-            className="space-y-2.5 pt-2 border-t border-teal-900/[0.07] dark:border-teal-400/[0.1]"
+            className="space-y-2.5 pt-3 border-t border-slate-200/80 dark:border-white/[0.07]"
           >
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Undang Penjaga / Pengelola via Email Google
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+              Undang Pemilik / Penjaga via Email Google
             </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               <input
                 type="text"
                 required
-                placeholder="Nama penjaga / staff"
+                placeholder="Nama lengkap"
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg input-surface border text-xs"
@@ -736,20 +769,39 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) => setInviteEmail(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg input-surface border text-xs"
               />
+              <select
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value as 'owner' | 'staff')}
+                aria-label="Peran Pengelola"
+                className="w-full px-3 py-2 rounded-lg input-surface border text-xs font-medium"
+              >
+                <option value="staff">Penjaga / Staff</option>
+                <option value="owner">Pemilik (Owner)</option>
+              </select>
             </div>
             <button
               type="submit"
               disabled={inviting}
-              className="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg btn-primary text-xs font-medium transition-all"
+              className="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-lg btn-primary text-xs font-medium transition-colors"
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>{inviting ? 'Menambahkan...' : 'Undang Email Pengelola'}</span>
+              <span>
+                {inviting
+                  ? 'Menambahkan...'
+                  : `Undang sebagai ${inviteRole === 'owner' ? 'Pemilik' : 'Admin'}`}
+              </span>
             </button>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+              Tips serah terima: undang email Google pemilik kost sebagai{' '}
+              <strong className="text-slate-700 dark:text-slate-200">Pemilik</strong>, minta
+              pemilik login sekali, lalu pemilik dapat menghapus akses tim developer dari daftar di
+              atas.
+            </p>
           </form>
         </section>
 
-        {/* Gradient Promotional Broadcast Card */}
-        <section className="rounded-xl gradient-hero-card border border-teal-500/30 p-5 sm:p-6 space-y-4">
+        {/* Promotional Broadcast Card */}
+        <section className="flex-1 rounded-xl gradient-hero-card border border-teal-800/20 p-5 sm:p-6 flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between border-b border-white/15 pb-3">
             <div>
               <p className="text-xs font-medium text-teal-200">
@@ -799,7 +851,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="button"
               onClick={handleCopyPromo}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-white text-[#06383B] hover:bg-teal-50 text-xs font-semibold transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-white text-[#0c4a49] hover:bg-teal-50 text-xs font-semibold transition-colors"
             >
               <Copy className="w-3.5 h-3.5" />
               <span>Salin Info</span>

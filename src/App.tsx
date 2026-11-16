@@ -4,7 +4,17 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, signOut, User } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  updateProfile,
+  User,
+} from 'firebase/auth';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import {
   auth,
@@ -77,6 +87,7 @@ import {
   saveRoomTypeConfigInCloud,
   saveSettingsInCloud,
   seedInitialDatabaseIfEmpty,
+  updateAdminRoleInCloud,
   updateMaintenanceLogInCloud,
   updatePaymentDetailsInCloud,
   updateRoomReceiptProfileInCloud,
@@ -145,7 +156,9 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authChecking, setAuthChecking] = useState(false);
+  const [authActionLoading, setAuthActionLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginInfo, setLoginInfo] = useState<string | null>(null);
   const [cloudBootstrapped, setCloudBootstrapped] = useState(false);
 
   // Navigation & Modals
@@ -200,6 +213,12 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
+        if (!user.emailVerified) {
+          setIsAdmin(false);
+          setCloudBootstrapped(false);
+          setAuthReady(true);
+          return;
+        }
         setAuthChecking(true);
         try {
           const allowed = await checkIsAdminUser(user.email, user.uid);
@@ -763,25 +782,217 @@ export default function App() {
     return rooms.find((r) => r.number === receiptPayment.roomNumber) ?? null;
   }, [receiptPayment, rooms]);
 
-  // Auth Actions
-  const handleGoogleLogin = async () => {
+  // Auth Helpers & Actions
+  const formatFirebaseAuthError = (err: unknown, fallback: string): string => {
+    const msg = err instanceof Error ? err.message : String(err ?? '');
+    if (msg.includes('popup-closed')) {
+      return 'Jendela login Google ditutup sebelum selesai.';
+    }
+    if (msg.includes('unauthorized-domain')) {
+      return 'Alamat ini belum terdaftar di Firebase Auth. Gunakan http://localhost:3000 atau tambahkan domain ini di Firebase Console → Authentication → Authorized domains.';
+    }
+    if (msg.includes('popup-blocked')) {
+      return 'Pop-up login diblokir browser. Izinkan pop-up lalu coba kembali.';
+    }
+    if (msg.includes('operation-not-allowed')) {
+      return 'Login Email & Kata Sandi belum diaktifkan di Firebase Console (Authentication → Sign-in method → Email/Password). Gunakan Masuk dengan Google atau aktifkan metode tersebut terlebih dahulu.';
+    }
+    if (msg.includes('email-already-in-use')) {
+      return 'Alamat email ini sudah terdaftar. Silakan masuk melalui tab Masuk atau gunakan fitur Lupa Kata Sandi.';
+    }
+    if (
+      msg.includes('invalid-credential') ||
+      msg.includes('wrong-password') ||
+      msg.includes('user-not-found')
+    ) {
+      return 'Email atau kata sandi tidak sesuai. Periksa kembali atau masuk dengan Google.';
+    }
+    if (msg.includes('weak-password')) {
+      return 'Kata sandi terlalu lemah. Gunakan minimal 6 karakter.';
+    }
+    if (msg.includes('invalid-email')) {
+      return 'Format alamat email tidak valid.';
+    }
+    if (msg.includes('too-many-requests')) {
+      return 'Terlalu banyak percobaan. Silakan tunggu beberapa saat lalu coba lagi.';
+    }
+    if (msg.includes('network-request-failed')) {
+      return 'Koneksi internet bermasalah. Periksa jaringan Anda lalu coba kembali.';
+    }
+    return fallback;
+  };
+
+  const handleClearAuthMessages = () => {
     setLoginError(null);
-    setAuthChecking(true);
+    setLoginInfo(null);
+  };
+
+  const handleGoogleLogin = async () => {
+    handleClearAuthMessages();
+    setAuthActionLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
       setLoginError(
-        err instanceof Error && err.message.includes('popup-closed')
-          ? 'Login dibatalkan. Silakan pilih akun Google untuk melanjutkan.'
-          : 'Gagal masuk dengan Google. Pastikan pop-up browser diizinkan.'
+        formatFirebaseAuthError(
+          err,
+          'Gagal masuk dengan Google. Pastikan mengakses lewat localhost/HTTPS dan pop-up diizinkan.'
+        )
       );
-      setAuthChecking(false);
+    } finally {
+      setAuthActionLoading(false);
+    }
+  };
+
+  const handleEmailLogin = async (payload: { email: string; password: string }) => {
+    handleClearAuthMessages();
+    setAuthActionLoading(true);
+    try {
+      const cred = await signInWithEmailAndPassword(
+        auth,
+        payload.email.trim(),
+        payload.password
+      );
+      if (!cred.user.emailVerified) {
+        setLoginInfo(
+          `Akun ${cred.user.email} belum terverifikasi. Silakan klik tautan verifikasi di kotak masuk email Anda.`
+        );
+      }
+    } catch (err) {
+      setLoginError(
+        formatFirebaseAuthError(
+          err,
+          'Gagal masuk. Periksa kembali email dan kata sandi Anda.'
+        )
+      );
+    } finally {
+      setAuthActionLoading(false);
+    }
+  };
+
+  const handleEmailRegister = async (payload: {
+    name: string;
+    email: string;
+    password: string;
+  }) => {
+    handleClearAuthMessages();
+    setAuthActionLoading(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(
+        auth,
+        payload.email.trim(),
+        payload.password
+      );
+      await updateProfile(cred.user, {
+        displayName: payload.name.trim(),
+      });
+      await sendEmailVerification(cred.user);
+      setLoginInfo(
+        `Akun berhasil dibuat! Tautan verifikasi sudah dikirim ke ${payload.email.trim()}.`
+      );
+    } catch (err) {
+      setLoginError(
+        formatFirebaseAuthError(
+          err,
+          'Gagal mendaftarkan akun baru. Silakan periksa data Anda dan coba lagi.'
+        )
+      );
+    } finally {
+      setAuthActionLoading(false);
+    }
+  };
+
+  const handleCheckEmailVerified = async () => {
+    if (!auth.currentUser) return;
+    handleClearAuthMessages();
+    setAuthActionLoading(true);
+    try {
+      await auth.currentUser.reload();
+      await auth.currentUser.getIdToken(true);
+      const refreshed = auth.currentUser;
+      setCurrentUser(refreshed);
+
+      if (!refreshed.emailVerified) {
+        setLoginError(
+          'Email belum terverifikasi. Silakan buka kotak masuk (atau folder Spam), klik tautan verifikasi, lalu tekan tombol ini lagi.'
+        );
+        return;
+      }
+
+      const allowed = await checkIsAdminUser(refreshed.email, refreshed.uid);
+      if (!allowed && refreshed.email) {
+        await registerAdminInCloud({
+          uid: refreshed.uid,
+          email: refreshed.email,
+          name: refreshed.displayName?.trim() || refreshed.email.split('@')[0],
+        });
+      }
+      await seedInitialDatabaseIfEmpty();
+      setIsAdmin(true);
+      setCloudBootstrapped(true);
+      setToastMessage(
+        `Selamat datang, ${refreshed.displayName || refreshed.email}! Akun pengelola aktif.`
+      );
+    } catch (err) {
+      setLoginError(
+        formatFirebaseAuthError(
+          err,
+          'Gagal memeriksa status verifikasi email. Silakan coba sesaat lagi.'
+        )
+      );
+    } finally {
+      setAuthActionLoading(false);
+    }
+  };
+
+  const handleResendVerification = async (): Promise<boolean> => {
+    if (!auth.currentUser) return false;
+    handleClearAuthMessages();
+    setAuthActionLoading(true);
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setLoginInfo(
+        `Email verifikasi baru telah dikirim ke ${auth.currentUser.email}. Cek kotak masuk atau folder Spam.`
+      );
+      return true;
+    } catch (err) {
+      setLoginError(
+        formatFirebaseAuthError(
+          err,
+          'Gagal mengirim ulang email verifikasi. Tunggu sebentar lalu coba lagi.'
+        )
+      );
+      return false;
+    } finally {
+      setAuthActionLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (email: string): Promise<boolean> => {
+    handleClearAuthMessages();
+    setAuthActionLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setLoginInfo(
+        `Tautan atur ulang kata sandi telah dikirim ke ${email.trim()}. Periksa kotak masuk atau folder Spam.`
+      );
+      return true;
+    } catch (err) {
+      setLoginError(
+        formatFirebaseAuthError(
+          err,
+          'Gagal mengirim email reset kata sandi. Pastikan alamat email benar.'
+        )
+      );
+      return false;
+    } finally {
+      setAuthActionLoading(false);
     }
   };
 
   const handleGoogleRegister = async (payload: { name: string }) => {
-    setLoginError(null);
-    setAuthChecking(true);
+    handleClearAuthMessages();
+    setAuthActionLoading(true);
     try {
       let user = currentUser;
       if (!user) {
@@ -790,7 +1001,12 @@ export default function App() {
       }
       if (!user || !user.email) {
         setLoginError('Gagal membaca akun Google. Silakan coba kembali.');
-        setAuthChecking(false);
+        return;
+      }
+      if (!user.emailVerified) {
+        setLoginInfo(
+          `Silakan verifikasi email ${user.email} terlebih dahulu sebelum mengaktifkan akses.`
+        );
         return;
       }
 
@@ -805,21 +1021,21 @@ export default function App() {
       setCloudBootstrapped(true);
       setToastMessage(`Selamat datang, ${payload.name}! Akun admin berhasil didaftarkan.`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('popup-closed')) {
-        setLoginError('Pendaftaran dibatalkan karena pop-up Google ditutup.');
-      } else {
-        setLoginError('Gagal mendaftarkan akun admin. Pastikan akun Google Anda terverifikasi.');
-      }
+      setLoginError(
+        formatFirebaseAuthError(
+          err,
+          'Gagal mendaftarkan akun admin. Pastikan akun Google Anda terverifikasi.'
+        )
+      );
     } finally {
-      setAuthChecking(false);
+      setAuthActionLoading(false);
     }
   };
 
   const handleLogout = async () => {
+    handleClearAuthMessages();
     await signOut(auth);
     setSelectedRoomId(null);
-    setLoginError(null);
   };
 
   const runPaidReceiptAutomation = async (
@@ -1141,13 +1357,31 @@ export default function App() {
     setToastMessage('Akses admin telah dihapus');
   };
 
-  const handleAddAdminInvite = async (email: string, name: string) => {
+  const handleAddAdminInvite = async (
+    email: string,
+    name: string,
+    role: 'owner' | 'staff' = 'staff'
+  ) => {
     await addAdminInviteInCloud({
       email,
       name,
+      role,
       addedBy: currentUser?.email ?? 'admin',
     });
-    setToastMessage(`Undangan pengelola diberikan kepada ${email}`);
+    setToastMessage(
+      `Undangan ${role === 'owner' ? 'Pemilik' : 'Admin'} diberikan kepada ${email}`
+    );
+  };
+
+  const handleUpdateAdminRole = async (
+    uid: string,
+    name: string,
+    role: 'owner' | 'staff'
+  ) => {
+    await updateAdminRoleInCloud(uid, name, role);
+    setToastMessage(
+      `Peran ${name} diperbarui menjadi ${role === 'owner' ? 'Pemilik' : 'Admin'}`
+    );
   };
 
   const handleRemoveAdminInvite = async (email: string) => {
@@ -1296,18 +1530,31 @@ export default function App() {
     );
   }
 
-  // Login OR Complete Admin Registration
+  // Login, Email Verification OR Complete Admin Registration
   if (!currentUser || !isAdmin) {
+    const authMode = !currentUser
+      ? 'unauthenticated'
+      : !currentUser.emailVerified
+      ? 'verify_email'
+      : 'register_needed';
+
     return (
       <>
         <LoginView
-          mode={currentUser && !isAdmin ? 'register_needed' : 'unauthenticated'}
+          mode={authMode}
           userEmail={currentUser?.email}
           defaultDisplayName={currentUser?.displayName}
-          loading={authChecking}
+          loading={authActionLoading}
           errorMsg={loginError}
+          infoMsg={loginInfo}
+          onClearMessages={handleClearAuthMessages}
           onGoogleLogin={handleGoogleLogin}
           onGoogleRegister={handleGoogleRegister}
+          onEmailLogin={handleEmailLogin}
+          onEmailRegister={handleEmailRegister}
+          onCheckEmailVerified={handleCheckEmailVerified}
+          onResendVerification={handleResendVerification}
+          onPasswordReset={handlePasswordReset}
           onLogout={handleLogout}
         />
         <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
@@ -1350,6 +1597,7 @@ export default function App() {
         />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto">
+          <div key={activePage} className="animate-page-enter">
           {activePage === 'dashboard' && (
             <DashboardView
               rooms={rooms}
@@ -1447,6 +1695,7 @@ export default function App() {
               onSaveSettings={handleSaveSettings}
               onResetDemo={handleResetDemo}
               onRemoveRegisteredAdmin={handleRemoveRegisteredAdmin}
+              onUpdateAdminRole={handleUpdateAdminRole}
               onAddAdminInvite={handleAddAdminInvite}
               onRemoveAdminInvite={handleRemoveAdminInvite}
               onEditRoomType={(rt) => setEditingRoomType(rt)}
@@ -1455,6 +1704,7 @@ export default function App() {
               onNotify={(msg) => setToastMessage(msg)}
             />
           )}
+          </div>
         </main>
       </div>
 

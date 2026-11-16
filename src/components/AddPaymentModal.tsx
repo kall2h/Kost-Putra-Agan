@@ -3,6 +3,7 @@ import { X, ReceiptText } from 'lucide-react';
 import { PaymentMethod, Room } from '../types/kost';
 import { getRoomDisplayName } from '../data/initialData';
 import { formatIDR, getTodayISO } from '../utils/format';
+import { CurrencyInput } from './CurrencyInput';
 
 interface AddPaymentModalProps {
   open: boolean;
@@ -74,7 +75,7 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -82,9 +83,9 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-payment-title"
-        className="relative z-10 w-full max-w-md rounded-2xl bg-gradient-to-b from-white to-[#F4FCFA] dark:from-[#0C1E22] dark:to-[#071418] border border-teal-900/[0.1] dark:border-teal-400/[0.16] shadow-xl overflow-hidden"
+        className="relative z-10 w-full max-w-md rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
       >
-        <div className="px-6 py-4 border-b border-teal-900/[0.08] dark:border-teal-400/[0.1] flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <ReceiptText className="w-5 h-5 text-teal-600 dark:text-teal-400" />
             <h2
@@ -127,26 +128,22 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                 Nominal Sewa (Rp)
               </label>
-              <input
-                type="number"
-                min={0}
-                step={50000}
+              <CurrencyInput
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg input-surface border font-mono-num text-sm"
+                onChange={setAmount}
+                aria-label="Nominal Sewa (Rp)"
+                className="w-full pr-3 py-2 rounded-lg input-surface border font-mono-num text-sm"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1.5">
                 Denda Telat (Rp)
               </label>
-              <input
-                type="number"
-                min={0}
-                step={10000}
+              <CurrencyInput
                 value={lateFee}
-                onChange={(e) => setLateFee(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg input-surface border font-mono-num text-sm"
+                onChange={setLateFee}
+                aria-label="Denda Telat (Rp)"
+                className="w-full pr-3 py-2 rounded-lg input-surface border font-mono-num text-sm"
               />
             </div>
           </div>
