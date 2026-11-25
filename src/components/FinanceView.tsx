@@ -1,9 +1,11 @@
+import { jsPDF } from 'jspdf';
 import React, { useMemo, useState } from 'react';
 import {
   Copy,
   Download,
   ExternalLink,
   FileSpreadsheet,
+  FileText, // file pdf
   MessageSquareText,
   Plus,
   Trash2,
@@ -62,7 +64,8 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
   onExportSuccess,
 }) => {
   const [waReportOpen, setWaReportOpen] = useState(false);
-  const [exportingExcel, setExportingExcel] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false)
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const monthOptions = useMemo(() => {
     const set = new Set<string>([
@@ -139,7 +142,77 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
       setExportingExcel(false);
     }
   };
-
+  const handleExportPDF = async () => {
+    setExportingPdf(true);
+    try {
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 14;
+      let y = 18;
+      const periodLabel = formatMonthYear(selectedMonth);
+      const roomByNumber = new Map(rooms.map((r) => [r.number, r]));
+      const paidList = payments.filter((p) => p.month === selectedMonth && p.status === 'Lunas')
+        .sort((a, b) => (a.paidDate || '').localeCompare(b.paidDate || ''));
+      const sortedExpenses = [...monthExpenses].sort((a, b) => a.date.localeCompare(b.date));
+      const money = (value: number) => `Rp ${value.toLocaleString('id-ID')}`;
+      const ensureSpace = (needed = 10) => {
+        if (y + needed > pageHeight - margin) { doc.addPage(); y = margin; }
+      };
+      const section = (heading: string) => {
+        ensureSpace(12);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+        doc.text(heading, margin, y); y += 7;
+      };
+      const table = (headers: string[], rows: (string | number)[][], widths: number[]) => {
+        const rowHeight = 7;
+        const drawRow = (cells: (string | number)[], isHeader = false) => {
+          ensureSpace(rowHeight + 1);
+          let x = margin;
+          doc.setFont('helvetica', isHeader ? 'bold' : 'normal');
+          doc.setFontSize(8);
+          cells.forEach((cell, i) => {
+            const width = widths[i];
+            if (isHeader) { doc.setFillColor(13, 148, 136); doc.setTextColor(255, 255, 255); doc.rect(x, y - 5, width, rowHeight, 'F'); }
+            else { doc.setTextColor(35, 45, 50); doc.setDrawColor(220, 226, 230); doc.rect(x, y - 5, width, rowHeight); }
+            const value = String(cell ?? '-');
+            const lines = doc.splitTextToSize(value, width - 3);
+            doc.text(lines.slice(0, 1), x + 1.5, y);
+            x += width;
+          });
+          y += rowHeight;
+        };
+        drawRow(headers, true); rows.forEach((row) => drawRow(row)); y += 4;
+      };
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(20, 45, 50);
+      doc.text(`LAPORAN KEUANGAN - ${(settings.name || 'KOST PUTRA AGAN').toUpperCase()}`, margin, y); y += 8;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(90, 100, 110);
+      doc.text(`Periode: ${periodLabel} | Pengelola: ${settings.adminName || 'Admin'}`, margin, y); y += 10;
+      section('1. RINGKASAN KEUANGAN PERIODE');
+      table(['Komponen', 'Keterangan', 'Nominal (Rp)'], [
+        ['Total Pemasukan (Lunas)', `${paidList.length} transaksi`, money(monthIncome)],
+        ['Pengeluaran Operasional', `${sortedExpenses.length} transaksi`, money(totalExpense)],
+        ['Laba / Arus Kas Bersih', netProfit >= 0 ? 'Surplus' : 'Defisit', money(netProfit)],
+      ], [90, 90, pageWidth - margin * 2 - 180]);
+      section('2. PEMASUKAN SEWA KAMAR (LUNAS)');
+      table(['No', 'Tanggal', 'Invoice', 'Kamar/Unit', 'Penyewa', 'Metode', 'Sewa (Rp)', 'Denda (Rp)', 'Total (Rp)'],
+        paidList.length ? paidList.map((p, idx) => { const room = roomByNumber.get(p.roomNumber); const lateFee = p.lateFee ?? 0; return [idx+1, p.paidDate || `${selectedMonth}-01`, p.invoiceNo || '-', room ? getRoomDisplayName(room) : `Kamar ${p.roomNumber}`, p.tenantName, p.method || '-', money(p.amount), money(lateFee), money(p.amount+lateFee)]; }) : [['-', '-', '-', 'Belum ada pemasukan lunas', '-', '-', money(0), money(0), money(0)]],
+        [10, 22, 24, 28, 35, 20, 28, 25, pageWidth-margin*2-192]);
+      section('3. PENGELUARAN OPERASIONAL');
+      table(['No', 'Tanggal', 'Kategori', 'Keterangan', 'Catatan', 'Nominal (Rp)'],
+        sortedExpenses.length ? sortedExpenses.map((e,idx)=>[idx+1,e.date,e.category,e.title,e.notes?.trim()||'-',money(e.amount)]) : [['-','-','-','Belum ada pengeluaran','-',money(0)]],
+        [12,25,25,60,70,pageWidth-margin*2-192]);
+      section('4. REKAP PENGELUARAN PER KATEGORI');
+      table(['No', 'Kategori', 'Persentase', 'Total (Rp)'], [...categoryTotals.map((c,idx)=>[idx+1,c.category,`${c.pct}%`,money(c.amount)]),['','TOTAL','100%',money(totalExpense)]], [15,70,35,pageWidth-margin*2-120]);
+      const pageCount = doc.getNumberOfPages();
+      for (let i=1;i<=pageCount;i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(130,130,130); doc.text(`Halaman ${i} dari ${pageCount}`, pageWidth-margin, pageHeight-7, {align:'right'}); }
+      doc.save(`laporan-keuangan-kost-putra-agan-${selectedMonth}.pdf`);
+      onExportSuccess(`Laporan PDF ${periodLabel} berhasil diunduh`);
+    } catch (err) {
+      console.error('Gagal mengekspor PDF:', err);
+      onExportSuccess('Gagal membuat file PDF. Silakan coba ekspor Excel atau CSV.');
+    } finally { setExportingPdf(false); }
+  };
   const handleExportCSV = () => {
     const periodLabel = formatMonthYear(selectedMonth);
     const roomByNumber = new Map(rooms.map((r) => [r.number, r]));
@@ -305,7 +378,15 @@ export const FinanceView: React.FC<FinanceViewProps> = ({
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>{exportingExcel ? 'Menyiapkan Excel...' : 'Ekspor Excel (.xlsx)'}</span>
           </button>
-
+          <button
+            type="button"
+            onClick={handleExportPDF}
+            disabled={exportingPdf}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg surface-card border border-slate-200/90 dark:border-white/[0.12] text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition-colors disabled:opacity-60"
+                >
+            <FileText className="w-3.5 h-3.5" />
+            <span>{exportingPdf ? 'Menyiapkan PDF...' : 'Ekspor PDF'}</span>
+          </button>
           <button
             type="button"
             onClick={handleExportCSV}
