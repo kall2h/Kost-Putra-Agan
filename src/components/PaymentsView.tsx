@@ -11,6 +11,8 @@ import {
   Download,
   Link2,
   FileText,
+  Clock3,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   MessageTemplate,
@@ -55,10 +57,10 @@ interface PaymentsViewProps {
   ) => void;
   onOpenAddPayment: () => void;
   onOpenReceiptFormat: () => void;
-  onCreateAndCopyPaymentLink: (
-    payment: PaymentRecord,
+  onOpenPaymentLinkModal: (
+    payment?: PaymentRecord | null,
     room?: Room | null
-  ) => Promise<void>;
+  ) => void;
   onDownloadPdfReceipt: (payment: PaymentRecord) => Promise<void>;
   onGenerateMonthlyBills: (month: string) => Promise<void>;
   onUpdatePaymentDetails: (
@@ -81,7 +83,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
   onCopyReminder,
   onOpenAddPayment,
   onOpenReceiptFormat,
-  onCreateAndCopyPaymentLink,
+  onOpenPaymentLinkModal,
   onDownloadPdfReceipt,
   onGenerateMonthlyBills,
   onUpdatePaymentDetails,
@@ -153,6 +155,20 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
       (r) => r.status === 'Terisi' && r.tenant && !existing.has(r.number)
     ).length;
   }, [payments, rooms, generateMonth]);
+
+  const pendingVerifications = useMemo(() => {
+    return payments
+      .filter((p) => {
+        if (p.status === 'Lunas' || !p.paymentLinkId) return false;
+        const link = paymentLinksById[p.paymentLinkId];
+        return link?.status === 'Menunggu Verifikasi';
+      })
+      .map((p) => ({
+        payment: p,
+        link: paymentLinksById[p.paymentLinkId!],
+        room: rooms.find((r) => r.number === p.roomNumber) ?? null,
+      }));
+  }, [payments, paymentLinksById, rooms]);
 
   const handleGenerateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -262,6 +278,15 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
 
           <button
             type="button"
+            onClick={() => onOpenPaymentLinkModal(null, null)}
+            className="min-h-[38px] inline-flex items-center gap-1.5 px-4 py-2 rounded-xl btn-primary text-xs font-semibold whitespace-nowrap"
+          >
+            <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Buat Link Pembayaran</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => {
               setGenerateMonth(getNextMonthISO(selectedMonth));
               setShowGenerator((v) => !v);
@@ -343,6 +368,77 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             </button>
           </div>
         </form>
+      )}
+
+      {/* Antrian Verifikasi Konfirmasi Masuk dari Link Pembayaran */}
+      {pendingVerifications.length > 0 && (
+        <section
+          aria-label="Antrian Verifikasi Pembayaran"
+          className="rounded-xl surface-card border border-amber-400/50 dark:border-amber-400/30 bg-amber-50/60 dark:bg-amber-500/[0.06] overflow-hidden"
+        >
+          <div className="px-5 py-3 border-b border-amber-200/70 dark:border-amber-400/20 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200">
+              <Clock3 className="w-4 h-4 text-amber-600 dark:text-amber-300" aria-hidden="true" />
+              <h2 className="font-display font-semibold text-xs sm:text-sm">
+                Konfirmasi Pembayaran Masuk ({pendingVerifications.length})
+              </h2>
+            </div>
+            <p className="text-[11px] text-amber-800 dark:text-amber-300">
+              Klik Verifikasi untuk otomatis ubah ke Lunas, buat PDF &amp; siapkan kirim kwitansi
+            </p>
+          </div>
+          <div className="divide-y divide-amber-200/60 dark:divide-amber-400/15">
+            {pendingVerifications.map(({ payment: pay, link, room }) => {
+              const total = pay.amount + (pay.lateFee ?? 0);
+              return (
+                <div
+                  key={pay.id}
+                  className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3"
+                >
+                  <div className="min-w-0 space-y-0.5">
+                    <p className="font-medium text-sm text-slate-900 dark:text-white">
+                      {pay.tenantName} ·{' '}
+                      <span className="text-slate-600 dark:text-slate-300">
+                        {room ? getRoomDisplayName(room) : `Kamar ${pay.roomNumber}`}
+                      </span>{' '}
+                      <span className="font-mono-num text-xs text-slate-500 dark:text-slate-400">
+                        ({formatMonthYear(pay.month)})
+                      </span>
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                      <span className="font-mono-num font-semibold text-slate-900 dark:text-white">
+                        {formatIDR(total)}
+                      </span>{' '}
+                      via{' '}
+                      <span className="font-medium">
+                        {link?.confirmationMethod || 'Transfer Bank'}
+                      </span>
+                      {link?.confirmationNote ? ` · ${link.confirmationNote}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => onOpenPaymentLinkModal(pay, room)}
+                      className="min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium"
+                    >
+                      <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Detail Link</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onMarkPaid(pay.id)}
+                      className="min-h-[36px] inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl btn-primary text-xs font-semibold"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      <span>Verifikasi Lunas &amp; Kirim Kwitansi</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* Tabel Tagihan */}
@@ -529,14 +625,18 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => onCreateAndCopyPaymentLink(pay, roomObj)}
-                                className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary text-teal-700 dark:text-teal-300"
+                                onClick={() => onOpenPaymentLinkModal(pay, roomObj)}
+                                className={`min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary ${
+                                  pay.paymentLinkId
+                                    ? 'text-teal-700 dark:text-teal-300 border-teal-500/40'
+                                    : 'text-slate-600 dark:text-slate-300'
+                                }`}
                                 title={
                                   pay.paymentLinkId
-                                    ? 'Salin Link Pembayaran Bank/QRIS'
-                                    : 'Buat & Salin Link Pembayaran'
+                                    ? 'Kelola & Salin Link Pembayaran'
+                                    : 'Buat Link Pembayaran'
                                 }
-                                aria-label="Salin Link Pembayaran"
+                                aria-label="Buat atau Salin Link Pembayaran"
                               >
                                 <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
                               </button>
@@ -572,7 +672,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                                 onClick={() => onMarkPaid(pay.id)}
                                 className="min-h-[36px] px-3.5 py-1.5 rounded-xl btn-primary text-xs font-medium whitespace-nowrap"
                               >
-                                {isPendingVerify ? 'Verifikasi & PDF' : 'Tandai Lunas'}
+                                {isPendingVerify ? 'Verifikasi & Kwitansi' : 'Tandai Lunas'}
                               </button>
                             </div>
                           )}

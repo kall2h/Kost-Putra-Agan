@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   CheckCircle2,
   Copy,
@@ -11,10 +11,15 @@ import {
   ShieldCheck,
   Clock3,
   AlertCircle,
+  Check,
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { PaymentLinkRecord } from '../types/kost';
-import { getPaymentLinkPublicInCloud, confirmPaymentLinkPublicInCloud } from '../services/kostFirestore';
+import {
+  getPaymentLinkPublicInCloud,
+  confirmPaymentLinkPublicInCloud,
+  subscribeToPaymentLinkPublicInCloud,
+} from '../services/kostFirestore';
 import {
   buildPdfReceiptInputFromLink,
   buildShareablePaymentUrl,
@@ -45,6 +50,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
   const [pdfNotice, setPdfNotice] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
+  const prevStatusRef = useRef<PaymentLinkRecord['status'] | null>(null);
+  const autoDownloadedRef = useRef<boolean>(false);
+
   const fetchLink = useCallback(async () => {
     setLoading(true);
     setErrorMsg(null);
@@ -65,8 +73,57 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
   }, [linkId]);
 
   useEffect(() => {
-    fetchLink();
-  }, [fetchLink]);
+    setLoading(true);
+    setErrorMsg(null);
+    prevStatusRef.current = null;
+    autoDownloadedRef.current = false;
+
+    const unsub = subscribeToPaymentLinkPublicInCloud(
+      linkId,
+      (res) => {
+        setLoading(false);
+        if (!res) {
+          setErrorMsg('Tautan tagihan tidak ditemukan atau sudah tidak berlaku.');
+          setLinkData(null);
+          return;
+        }
+        setErrorMsg(null);
+        setLinkData(res);
+        setConfirmMethod((prev) =>
+          prevStatusRef.current === null ? res.preferredMethod || 'Transfer BCA' : prev
+        );
+
+        // When status transitions live from unpaid/pending -> Lunas, auto-trigger PDF receipt once
+        const previous = prevStatusRef.current;
+        prevStatusRef.current = res.status;
+        if (
+          previous &&
+          previous !== 'Lunas' &&
+          res.status === 'Lunas' &&
+          !autoDownloadedRef.current
+        ) {
+          autoDownloadedRef.current = true;
+          downloadReceiptPdf(buildPdfReceiptInputFromLink(res))
+            .then((filename) => {
+              setPdfNotice(
+                `Pembayaran terverifikasi! Kwitansi resmi ${filename} otomatis diunduh.`
+              );
+            })
+            .catch(() => {
+              setPdfNotice(
+                'Pembayaran terverifikasi! Silakan klik Unduh Bukti Kwitansi (PDF).'
+              );
+            });
+        }
+      },
+      () => {
+        setLoading(false);
+        setErrorMsg('Gagal memuat rincian pembayaran. Periksa koneksi internet Anda.');
+      }
+    );
+
+    return () => unsub();
+  }, [linkId]);
 
   useEffect(() => {
     if (!linkData || linkData.status !== 'Lunas' || linkData.receiptSnapshot?.showQrVerification === false) {
@@ -96,7 +153,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
     return () => window.clearTimeout(t);
   }, [copiedMsg]);
 
-  const handleCopyAccount = async (text: string, label: string) => {
+  const handleCopyText = async (text: string, label: string) => {
     try {
       await navigator.clipboard.writeText(text);
       setCopiedMsg(`${label} disalin`);
@@ -112,17 +169,6 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
     setErrorMsg(null);
     try {
       await confirmPaymentLinkPublicInCloud(linkData.id, confirmMethod, confirmNote);
-      setLinkData((prev) =>
-        prev
-          ? {
-              ...prev,
-              status: 'Menunggu Verifikasi',
-              confirmationMethod: confirmMethod,
-              confirmationNote: confirmNote.trim() || undefined,
-              confirmedAt: new Date().toISOString(),
-            }
-          : prev
-      );
     } catch {
       setErrorMsg('Gagal mengirim konfirmasi pembayaran. Silakan hubungi admin via WhatsApp.');
     } finally {
@@ -184,6 +230,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
   const isPendingVerify = linkData.status === 'Menunggu Verifikasi';
   const snap = linkData.receiptSnapshot;
   const accentTheme = snap?.accentTheme ?? 'teal';
+  const currentStep = isPaid ? 3 : isPendingVerify ? 2 : 1;
 
   const waAdminConfirmText = isPendingVerify
     ? `Halo ${linkData.adminName}, saya *${linkData.tenantName}* (${
@@ -222,9 +269,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-medium text-teal-100">
-                No. Invoice
-              </p>
+              <p className="text-[11px] font-medium text-teal-100">No. Invoice</p>
               <p className="font-mono-num text-sm font-semibold">{linkData.invoiceNo}</p>
             </div>
           </div>
@@ -232,18 +277,77 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
           <div className="mt-5 pt-4 border-t border-white/15 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs text-teal-100">Total Tagihan Sewa</p>
-              <p className="font-mono-num text-2xl sm:text-3xl font-bold mt-0.5">
-                {formatIDR(grandTotal)}
-              </p>
+              <div className="flex items-center gap-2.5 mt-0.5">
+                <p className="font-mono-num text-2xl sm:text-3xl font-bold">
+                  {formatIDR(grandTotal)}
+                </p>
+                {!isPaid && (
+                  <button
+                    type="button"
+                    onClick={() => handleCopyText(String(grandTotal), 'Nominal transfer')}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-[11px] font-medium text-white transition-colors"
+                    title="Salin nominal angka"
+                  >
+                    <Copy className="w-3 h-3" aria-hidden="true" />
+                    <span>Salin</span>
+                  </button>
+                )}
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={fetchLink}
-              className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-medium text-white"
-            >
-              <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Segarkan Status</span>
-            </button>
+
+            <div className="text-right">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 border border-white/20 text-xs font-medium text-white">
+                {isPaid ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" aria-hidden="true" />
+                    <span>Lunas</span>
+                  </>
+                ) : isPendingVerify ? (
+                  <>
+                    <Clock3 className="w-3.5 h-3.5 text-amber-300" aria-hidden="true" />
+                    <span>Menunggu Verifikasi</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-3.5 h-3.5 text-teal-200" aria-hidden="true" />
+                    <span>Sinkron Real-Time</span>
+                  </>
+                )}
+              </span>
+            </div>
+          </div>
+
+          {/* 3-Step Payment Timeline */}
+          <div className="mt-5 pt-4 border-t border-white/15 grid grid-cols-3 gap-2 text-xs">
+            {[
+              { step: 1, label: 'Transfer / Bayar' },
+              { step: 2, label: 'Verifikasi' },
+              { step: 3, label: 'Lunas & Kwitansi' },
+            ].map((item) => {
+              const done = currentStep > item.step || (isPaid && item.step === 3);
+              const active = currentStep === item.step && !done;
+              return (
+                <div
+                  key={item.step}
+                  className={`flex items-center gap-2 rounded-xl px-2.5 py-2 ${
+                    done || active ? 'bg-white/15 text-white' : 'bg-white/5 text-white/65'
+                  }`}
+                >
+                  <span
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                      done
+                        ? 'bg-emerald-400 text-slate-950'
+                        : active
+                        ? 'bg-white text-teal-900'
+                        : 'bg-white/15 text-white/80'
+                    }`}
+                  >
+                    {done ? <Check className="w-3 h-3" aria-hidden="true" /> : item.step}
+                  </span>
+                  <span className="truncate font-medium">{item.label}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -253,13 +357,13 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
             id="printable-receipt"
             className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden"
           >
-            <div className="px-6 py-4 bg-emerald-50/70 border-b border-emerald-200/80 flex flex-wrap items-center justify-between gap-3 no-print">
-              <div className="flex items-center gap-2 text-emerald-800">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" aria-hidden="true" />
+            <div className="px-6 py-4 bg-emerald-50/80 border-b border-emerald-200/80 flex flex-wrap items-center justify-between gap-3 no-print">
+              <div className="flex items-center gap-2.5 text-emerald-800">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" aria-hidden="true" />
                 <div>
                   <p className="text-sm font-semibold">Pembayaran Lunas &amp; Terverifikasi</p>
                   <p className="text-xs text-emerald-700">
-                    Kwitansi resmi PDF siap diunduh di bawah ini
+                    Kwitansi resmi PDF telah diterbitkan otomatis
                   </p>
                 </div>
               </div>
@@ -287,7 +391,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
             </div>
 
             {pdfNotice && (
-              <div className="px-6 py-2.5 bg-teal-50 border-b border-teal-200 text-xs text-teal-800 no-print">
+              <div className="px-6 py-2.5 bg-teal-50 border-b border-teal-200 text-xs text-teal-800 font-medium no-print">
                 {pdfNotice}
               </div>
             )}
@@ -432,7 +536,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
         ) : (
           <div className="space-y-5 no-print">
             {/* Invoice Breakdown Card */}
-            <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-4">
+            <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 space-y-4">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <div>
                   <p className="text-xs text-slate-500">Tagihan Untuk</p>
@@ -445,7 +549,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                     isPendingVerify ? 'text-amber-700' : 'text-rose-700'
                   }`}
                 >
-                  <Clock3 className="w-3.5 h-3.5" />
+                  <Clock3 className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>
                     {isPendingVerify ? 'Menunggu Verifikasi Admin' : 'Menunggu Pembayaran'}
                   </span>
@@ -490,7 +594,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
             </div>
 
             {/* Payment Channels */}
-            <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-5">
+            <div className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 space-y-5">
               <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <h2 className="font-display font-semibold text-base text-slate-900">
                   Pilihan Saluran Pembayaran
@@ -501,7 +605,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
               </div>
 
               {(linkData.bankName || linkData.accountNumber) && (
-                <div className="space-y-2">
+                <div className="rounded-xl bg-slate-50 border border-slate-200/80 p-4 space-y-2">
                   <div className="flex items-center gap-2 text-teal-800">
                     <Landmark className="w-4 h-4" aria-hidden="true" />
                     <span className="font-display text-xs font-semibold">
@@ -523,9 +627,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                       <button
                         type="button"
                         onClick={() =>
-                          handleCopyAccount(linkData.accountNumber!, 'Nomor rekening')
+                          handleCopyText(linkData.accountNumber!, 'Nomor rekening')
                         }
-                        className="inline-flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium"
+                        className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-1.5 rounded-xl btn-secondary text-xs font-medium"
                       >
                         <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>Salin No. Rek</span>
@@ -536,12 +640,12 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
               )}
 
               {linkData.qrisImageUrl && (
-                <div className="pt-4 border-t border-slate-100 space-y-3 text-center">
+                <div className="pt-2 space-y-3 text-center">
                   <div className="inline-flex items-center gap-1.5 font-display text-xs font-semibold text-slate-700">
                     <QrCode className="w-4 h-4 text-teal-700" aria-hidden="true" />
                     <span>Scan QRIS Pembayaran</span>
                   </div>
-                  <div className="max-w-[240px] mx-auto bg-white p-3 rounded-xl border border-slate-200">
+                  <div className="max-w-[240px] mx-auto bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
                     <img
                       src={linkData.qrisImageUrl}
                       alt={`QRIS ${linkData.propertyName}`}
@@ -583,9 +687,8 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                         {linkData.confirmationMethod || 'Transfer Bank'}
                       </span>
                       {linkData.confirmationNote ? ` (${linkData.confirmationNote})` : ''}.
-                      Setelah pengelola memverifikasi mutasi, tombol{' '}
-                      <span className="font-semibold">Unduh Bukti Kwitansi PDF</span> akan muncul
-                      otomatis di halaman ini.
+                      Halaman ini terhubung secara real-time: begitu pengelola memverifikasi, status otomatis berubah menjadi{' '}
+                      <span className="font-semibold">Lunas</span> dan kwitansi PDF langsung terunduh.
                     </p>
                   </div>
                 </div>
@@ -607,7 +710,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                     className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-2 rounded-xl bg-white border border-amber-300 hover:bg-amber-100/60 text-xs font-medium text-amber-900"
                   >
                     <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
-                    <span>Cek Status Kwitansi PDF</span>
+                    <span>Segarkan Status</span>
                   </button>
                 </div>
               </div>
@@ -621,19 +724,23 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                     Konfirmasi Sudah Bayar
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Kirim pemberitahuan ke pengelola agar pembayaran langsung diverifikasi dan kwitansi PDF diterbitkan.
+                    Kirim pemberitahuan ke pengelola agar pembayaran langsung diverifikasi dan kwitansi PDF otomatis terbit di halaman ini.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
+                    <label
+                      htmlFor="pub-confirm-method"
+                      className="block text-xs font-medium text-slate-600 mb-1"
+                    >
                       Metode yang Digunakan
                     </label>
                     <select
+                      id="pub-confirm-method"
                       value={confirmMethod}
                       onChange={(e) => setConfirmMethod(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-sm text-slate-900"
                     >
                       <option value="Transfer BCA">Transfer BCA</option>
                       <option value="QRIS">QRIS</option>
@@ -642,16 +749,20 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-1">
+                    <label
+                      htmlFor="pub-confirm-note"
+                      className="block text-xs font-medium text-slate-600 mb-1"
+                    >
                       Catatan / Nama Pengirim (opsional)
                     </label>
                     <input
+                      id="pub-confirm-note"
                       type="text"
                       maxLength={180}
                       placeholder="Misal: Transfer a.n. Rizky jam 14:20"
                       value={confirmNote}
                       onChange={(e) => setConfirmNote(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-sm text-slate-900"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white text-sm text-slate-900"
                     />
                   </div>
                 </div>

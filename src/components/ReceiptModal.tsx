@@ -32,6 +32,7 @@ interface ReceiptModalProps {
   templates?: MessageTemplate[];
   receiptTemplate?: ReceiptTemplateConfig;
   settings: PropertySettings;
+  autoVerifiedNotice?: string | null;
   onClose: () => void;
   onCopySuccess: (msg: string) => void;
   onEnsurePaymentLink?: (payment: PaymentRecord, room?: Room | null) => Promise<string>;
@@ -55,6 +56,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   templates = [],
   receiptTemplate = DEFAULT_RECEIPT_TEMPLATE,
   settings,
+  autoVerifiedNotice,
   onClose,
   onCopySuccess,
   onEnsurePaymentLink,
@@ -187,6 +189,26 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {autoVerifiedNotice && (
+          <div className="px-6 py-3 bg-emerald-50/95 dark:bg-emerald-500/10 border-b border-emerald-200/80 dark:border-emerald-400/20 flex flex-wrap items-center justify-between gap-3 no-print">
+            <div className="flex items-center gap-2 text-xs font-medium text-emerald-800 dark:text-emerald-200">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" aria-hidden="true" />
+              <span>{autoVerifiedNotice}</span>
+            </div>
+            {room?.tenant?.phone && (
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 min-h-[34px] px-3 py-1.5 rounded-xl btn-primary text-xs font-semibold whitespace-nowrap"
+              >
+                <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Kirim Kwitansi ke WA</span>
+              </a>
+            )}
+          </div>
+        )}
 
         {/* Clean, Spacious Receipt Surface */}
         <div

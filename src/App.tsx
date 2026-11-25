@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
@@ -79,6 +79,7 @@ import {
   checkInTenantToCloud,
   checkIsAdminUser,
   checkOutTenantInCloud,
+  createBillAndPaymentLinkInCloud,
   createOrSyncPaymentLinkInCloud,
   deleteExpenseInCloud,
   deleteMaintenanceLogInCloud,
@@ -132,6 +133,7 @@ import { RoomDrawer } from './components/RoomDrawer';
 import { CheckInModal } from './components/CheckInModal';
 import { ReceiptModal } from './components/ReceiptModal';
 import { ReceiptFormatModal } from './components/ReceiptFormatModal';
+import { PaymentLinkModal } from './components/PaymentLinkModal';
 import { PublicPaymentView } from './components/PublicPaymentView';
 import { AddPaymentModal } from './components/AddPaymentModal';
 import { AddExpenseModal } from './components/AddExpenseModal';
@@ -181,7 +183,13 @@ export default function App() {
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [addRoomModalOpen, setAddRoomModalOpen] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<PaymentRecord | null>(null);
+  const [receiptAutoNotice, setReceiptAutoNotice] = useState<string | null>(null);
   const [receiptFormatModalOpen, setReceiptFormatModalOpen] = useState(false);
+  const [paymentLinkModalContext, setPaymentLinkModalContext] = useState<{
+    open: boolean;
+    payment?: PaymentRecord | null;
+    room?: Room | null;
+  }>({ open: false });
   const [editingRoomType, setEditingRoomType] = useState<RoomTypeConfig | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -525,6 +533,29 @@ export default function App() {
           };
         });
         setPaymentLinksById(map);
+
+        // Real-time notifications & auto-sync when a payment link is confirmed or verified
+        if (!linkSnapBootstrappedRef.current) {
+          linkSnapBootstrappedRef.current = true;
+          Object.values(map).forEach((link) => {
+            knownLinkStatusRef.current[link.id] = link.status;
+          });
+        } else {
+          Object.values(map).forEach((link) => {
+            const prevStatus = knownLinkStatusRef.current[link.id];
+            knownLinkStatusRef.current[link.id] = link.status;
+            if (
+              prevStatus !== 'Menunggu Verifikasi' &&
+              link.status === 'Menunggu Verifikasi'
+            ) {
+              setToastMessage(
+                `Konfirmasi bayar masuk: Kamar ${link.roomNumber} (${link.tenantName}) via ${
+                  link.confirmationMethod || 'Transfer'
+                }`
+              );
+            }
+          });
+        }
       },
       (error) => handleFirestoreError(error, OperationType.GET, 'paymentLinks')
     );
@@ -1080,9 +1111,14 @@ export default function App() {
     setSelectedRoomId(null);
   };
 
+  const linkSnapBootstrappedRef = useRef(false);
+  const knownLinkStatusRef = useRef<Record<string, PaymentLinkStatus>>({});
+  const autoSyncedPaymentIdsRef = useRef<Set<string>>(new Set());
+
   const runPaidReceiptAutomation = async (
     paidRecord: PaymentRecord,
-    room?: Room | null
+    room?: Room | null,
+    options?: { autoNotice?: boolean }
   ): Promise<boolean> => {
     const resolved = resolveRoomPaymentProfile(room, settings, receiptTemplate);
     let pdfGenerated = false;
@@ -1097,16 +1133,94 @@ export default function App() {
       );
       pdfGenerated = true;
     }
+
+    let waCopied = false;
+    if (resolved.autoOpenWaOnPaid && paidRecord.paymentLinkId) {
+      const activeTemplates =
+        messageTemplates.length > 0 ? messageTemplates : DEFAULT_MESSAGE_TEMPLATES;
+      const lunasTemplate =
+        activeTemplates.find((t) => t.category === 'lunas') ??
+        DEFAULT_MESSAGE_TEMPLATES.find((t) => t.category === 'lunas')!;
+      const waText = renderMessageTemplate(lunasTemplate.body, {
+        settings,
+        room,
+        payment: paidRecord,
+        month: paidRecord.month,
+        paymentUrl: buildShareablePaymentUrl(paidRecord.paymentLinkId),
+      });
+      try {
+        await navigator.clipboard.writeText(waText);
+        waCopied = true;
+      } catch {
+        // Ignore clipboard permission denial silently
+      }
+    }
+
     if (receiptTemplate.autoOpenReceiptModalOnPaid || resolved.autoOpenWaOnPaid) {
+      setReceiptAutoNotice(
+        options?.autoNotice || resolved.autoOpenWaOnPaid
+          ? pdfGenerated && waCopied
+            ? 'Kwitansi PDF diunduh & pesan WhatsApp otomatis disalin. Klik tombol di samping untuk mengirim.'
+            : pdfGenerated
+            ? 'Status Lunas terverifikasi & kwitansi PDF otomatis dibuat.'
+            : 'Status Lunas terverifikasi. Kwitansi digital siap dikirim ke penyewa.'
+          : null
+      );
       setReceiptPayment(paidRecord);
     }
     return pdfGenerated;
   };
 
+  // Auto-sync: if any paymentLink reaches Lunas while its payment record is still Belum Bayar
+  useEffect(() => {
+    if (!isAdmin || !cloudBootstrapped) return;
+    const unpaidWithVerifiedLink = payments.filter((pay) => {
+      if (pay.status === 'Lunas' || !pay.paymentLinkId) return false;
+      if (autoSyncedPaymentIdsRef.current.has(pay.id)) return false;
+      const link = paymentLinksById[pay.paymentLinkId];
+      return link?.status === 'Lunas';
+    });
+    if (unpaidWithVerifiedLink.length === 0) return;
+
+    unpaidWithVerifiedLink.forEach(async (pay) => {
+      autoSyncedPaymentIdsRef.current.add(pay.id);
+      const linkInfo = pay.paymentLinkId ? paymentLinksById[pay.paymentLinkId] : undefined;
+      const targetRoom = rooms.find((r) => r.number === pay.roomNumber) ?? null;
+      const validMethods: PaymentMethod[] = [
+        'Transfer BCA',
+        'QRIS',
+        'Transfer Mandiri',
+        'Tunai',
+      ];
+      const confirmedMethod =
+        linkInfo?.confirmationMethod &&
+        validMethods.includes(linkInfo.confirmationMethod as PaymentMethod)
+          ? (linkInfo.confirmationMethod as PaymentMethod)
+          : undefined;
+      try {
+        const updated = await markPaymentPaidInCloud(pay, {
+          paidDate: linkInfo?.paidDate ?? undefined,
+          room: targetRoom,
+          settings,
+          receiptTemplate,
+          method: confirmedMethod,
+          linkRecord: linkInfo,
+        });
+        await runPaidReceiptAutomation(updated, targetRoom, { autoNotice: true });
+        setToastMessage(
+          `Pembayaran Kamar ${pay.roomNumber} terverifikasi otomatis Lunas & kwitansi disiapkan`
+        );
+      } catch {
+        autoSyncedPaymentIdsRef.current.delete(pay.id);
+      }
+    });
+  }, [isAdmin, cloudBootstrapped, payments, paymentLinksById, rooms, settings, receiptTemplate]);
+
   // Cloud Actions
   const handleMarkPaid = async (paymentId: string) => {
     const target = payments.find((p) => p.id === paymentId);
     if (!target) return;
+    autoSyncedPaymentIdsRef.current.add(paymentId);
     const targetRoom = rooms.find((r) => r.number === target.roomNumber) ?? null;
     const linkInfo = target.paymentLinkId
       ? paymentLinksById[target.paymentLinkId]
@@ -1128,11 +1242,14 @@ export default function App() {
       settings,
       receiptTemplate,
       method: confirmedMethod,
+      linkRecord: linkInfo,
     });
-    const autoPdf = await runPaidReceiptAutomation(updated, targetRoom);
+    const autoPdf = await runPaidReceiptAutomation(updated, targetRoom, {
+      autoNotice: true,
+    });
     setToastMessage(
       autoPdf
-        ? `Kamar ${target.roomNumber} Lunas · Kwitansi PDF otomatis dibuat & diunduh`
+        ? `Kamar ${target.roomNumber} Lunas · Kwitansi PDF dibuat & siap dikirim`
         : `Pembayaran Kamar ${target.roomNumber} (${target.tenantName}) ditandai Lunas`
     );
   };
@@ -1309,6 +1426,23 @@ export default function App() {
       paymentLinkId: existing?.paymentLinkId,
     });
     setToastMessage('Rincian tagihan & denda berhasil diperbarui');
+  };
+
+  const handleCreateOrUpdatePaymentLink = async (payload: {
+    room: Room;
+    month: string;
+    existingPayment?: PaymentRecord | null;
+    amount: number;
+    lateFee?: number;
+    notes?: string;
+    preferredMethod: PaymentMethod;
+    externalPaymentLink?: string;
+  }) => {
+    return createBillAndPaymentLinkInCloud({
+      ...payload,
+      settings,
+      receiptTemplate,
+    });
   };
 
   const handleEnsurePaymentLink = async (
@@ -1688,11 +1822,20 @@ export default function App() {
               selectedMonth={selectedPaymentMonth}
               onChangeMonth={setSelectedPaymentMonth}
               onMarkPaid={handleMarkPaid}
-              onOpenReceipt={(pay) => setReceiptPayment(pay)}
+              onOpenReceipt={(pay) => {
+                setReceiptAutoNotice(null);
+                setReceiptPayment(pay);
+              }}
               onCopyReminder={handleCopyReminder}
               onOpenAddPayment={() => setAddPaymentOpen(true)}
               onOpenReceiptFormat={() => setReceiptFormatModalOpen(true)}
-              onCreateAndCopyPaymentLink={handleCreateAndCopyPaymentLink}
+              onOpenPaymentLinkModal={(payment, room) =>
+                setPaymentLinkModalContext({
+                  open: true,
+                  payment: payment ?? null,
+                  room: room ?? null,
+                })
+              }
               onDownloadPdfReceipt={handleDownloadPdfReceipt}
               onGenerateMonthlyBills={handleGenerateMonthlyBills}
               onUpdatePaymentDetails={handleUpdatePaymentDetails}
@@ -1769,7 +1912,10 @@ export default function App() {
         onOpenCheckIn={handleOpenCheckIn}
         onCheckOut={handleCheckOut}
         onMarkPaid={handleMarkPaid}
-        onOpenReceipt={(pay) => setReceiptPayment(pay)}
+        onOpenReceipt={(pay) => {
+          setReceiptAutoNotice(null);
+          setReceiptPayment(pay);
+        }}
         onCopyReminder={handleCopyReminder}
         onSaveRoomReceiptProfile={handleSaveRoomReceiptProfile}
         onCreateAndCopyPaymentLink={handleCreateAndCopyPaymentLink}
@@ -1829,9 +1975,30 @@ export default function App() {
         templates={messageTemplates}
         receiptTemplate={receiptTemplate}
         settings={settings}
-        onClose={() => setReceiptPayment(null)}
+        autoVerifiedNotice={receiptAutoNotice}
+        onClose={() => {
+          setReceiptPayment(null);
+          setReceiptAutoNotice(null);
+        }}
         onCopySuccess={(msg) => setToastMessage(msg)}
         onEnsurePaymentLink={handleEnsurePaymentLink}
+      />
+
+      <PaymentLinkModal
+        open={paymentLinkModalContext.open}
+        selectedMonth={selectedPaymentMonth}
+        initialPayment={paymentLinkModalContext.payment}
+        initialRoom={paymentLinkModalContext.room}
+        payments={payments}
+        rooms={rooms}
+        paymentLinksById={paymentLinksById}
+        settings={settings}
+        receiptTemplate={receiptTemplate}
+        templates={messageTemplates}
+        onClose={() => setPaymentLinkModalContext({ open: false })}
+        onCreateOrUpdateLink={handleCreateOrUpdatePaymentLink}
+        onMarkPaid={handleMarkPaid}
+        onNotify={(msg) => setToastMessage(msg)}
       />
 
       <ReceiptFormatModal

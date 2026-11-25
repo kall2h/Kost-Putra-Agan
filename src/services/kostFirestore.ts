@@ -5,8 +5,10 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   serverTimestamp,
   setDoc,
+  Unsubscribe,
   updateDoc,
   writeBatch,
 } from 'firebase/firestore';
@@ -738,52 +740,192 @@ export async function createOrSyncPaymentLinkInCloud(params: {
   }
 }
 
+function mapPaymentLinkSnapshotData(
+  id: string,
+  data: Record<string, unknown>
+): PaymentLinkRecord {
+  return {
+    id,
+    paymentId: String(data.paymentId ?? ''),
+    roomId: String(data.roomId ?? ''),
+    roomNumber: String(data.roomNumber ?? ''),
+    roomName: data.roomName ? String(data.roomName) : undefined,
+    tenantName: String(data.tenantName ?? ''),
+    month: String(data.month ?? ''),
+    invoiceNo: String(data.invoiceNo ?? ''),
+    amount: Number(data.amount ?? 0),
+    lateFee: typeof data.lateFee === 'number' ? data.lateFee : undefined,
+    dueDay: Number(data.dueDay ?? 10),
+    status: (data.status ?? 'Belum Bayar') as PaymentLinkStatus,
+    preferredMethod: String(data.preferredMethod ?? 'Transfer BCA'),
+    bankName: data.bankName ? String(data.bankName) : undefined,
+    accountNumber: data.accountNumber ? String(data.accountNumber) : undefined,
+    accountHolder: data.accountHolder ? String(data.accountHolder) : undefined,
+    qrisImageUrl: data.qrisImageUrl ? String(data.qrisImageUrl) : undefined,
+    externalPaymentLink: data.externalPaymentLink
+      ? String(data.externalPaymentLink)
+      : undefined,
+    paidDate: data.paidDate ? String(data.paidDate) : null,
+    method: data.method ? String(data.method) : null,
+    confirmationMethod: data.confirmationMethod
+      ? String(data.confirmationMethod)
+      : undefined,
+    confirmationNote: data.confirmationNote
+      ? String(data.confirmationNote)
+      : undefined,
+    confirmedAt: data.confirmedAt ? String(data.confirmedAt) : undefined,
+    propertyName: String(data.propertyName ?? 'Kost Putra Agan'),
+    propertyAddress: data.propertyAddress ? String(data.propertyAddress) : undefined,
+    adminName: String(data.adminName ?? 'Pengelola'),
+    whatsappAdmin: data.whatsappAdmin ? String(data.whatsappAdmin) : undefined,
+    receiptSnapshot: data.receiptSnapshot as PaymentLinkRecord['receiptSnapshot'],
+  };
+}
+
+export async function createBillAndPaymentLinkInCloud(params: {
+  room: Room;
+  month: string;
+  existingPayment?: PaymentRecord | null;
+  amount: number;
+  lateFee?: number;
+  notes?: string;
+  preferredMethod?: PaymentMethod;
+  externalPaymentLink?: string;
+  settings: PropertySettings;
+  receiptTemplate: ReceiptTemplateConfig;
+}): Promise<{ payment: PaymentRecord; linkId: string }> {
+  const {
+    room,
+    month,
+    existingPayment,
+    amount,
+    lateFee,
+    notes,
+    preferredMethod,
+    externalPaymentLink,
+    settings,
+    receiptTemplate,
+  } = params;
+
+  const cleanAmount = Math.min(50000000, Math.max(0, Number(amount) || 0));
+  const cleanLateFee =
+    typeof lateFee === 'number' && lateFee > 0
+      ? Math.min(20000000, Math.max(0, lateFee))
+      : undefined;
+  const cleanNotes = notes?.trim() ? notes.trim().slice(0, 300) : undefined;
+
+  const paymentId = existingPayment?.id || `pay-${month}-${room.number}`;
+  const invoiceNo =
+    existingPayment?.invoiceNo || buildInvoiceNumber(month, room.number);
+  const linkId = existingPayment?.paymentLinkId || generatePaymentLinkId(paymentId);
+  const tenantName =
+    existingPayment?.tenantName || room.tenant?.name || `Penghuni Kamar ${room.number}`;
+
+  const paymentRecord: PaymentRecord = {
+    id: paymentId,
+    invoiceNo,
+    roomNumber: room.number,
+    tenantName,
+    month,
+    amount: cleanAmount,
+    lateFee: cleanLateFee,
+    paidDate: existingPayment?.paidDate ?? null,
+    status: existingPayment?.status ?? 'Belum Bayar',
+    method: existingPayment?.method ?? null,
+    notes: cleanNotes,
+    paymentLinkId: linkId,
+    receiptGeneratedAt: existingPayment?.receiptGeneratedAt,
+  };
+
+  const linkPayload = buildPaymentLinkDocumentPayload({
+    payment: paymentRecord,
+    room,
+    settings,
+    receiptTemplate,
+  });
+  if (preferredMethod) {
+    linkPayload.preferredMethod = preferredMethod;
+  }
+  if (externalPaymentLink !== undefined) {
+    const trimmedExt = externalPaymentLink.trim().slice(0, 300);
+    if (trimmedExt) {
+      linkPayload.externalPaymentLink = trimmedExt;
+    } else {
+      delete linkPayload.externalPaymentLink;
+    }
+  }
+
+  const paymentPayload: Record<string, unknown> = {
+    invoiceNo,
+    roomNumber: room.number,
+    tenantName: tenantName.trim().slice(0, 100),
+    month,
+    amount: cleanAmount,
+    paidDate: paymentRecord.paidDate,
+    status: paymentRecord.status,
+    method: paymentRecord.method,
+    paymentLinkId: linkId,
+    updatedAt: serverTimestamp(),
+  };
+  if (cleanLateFee) {
+    paymentPayload.lateFee = cleanLateFee;
+  }
+  if (cleanNotes) {
+    paymentPayload.notes = cleanNotes;
+  }
+
+  try {
+    const batch = writeBatch(db);
+    if (existingPayment) {
+      const updatePayload: Record<string, unknown> = {
+        amount: cleanAmount,
+        paymentLinkId: linkId,
+        updatedAt: serverTimestamp(),
+        lateFee: cleanLateFee ? cleanLateFee : deleteField(),
+        notes: cleanNotes ? cleanNotes : deleteField(),
+      };
+      batch.update(doc(db, 'payments', paymentId), updatePayload);
+    } else {
+      batch.set(doc(db, 'payments', paymentId), paymentPayload);
+    }
+    batch.set(doc(db, 'paymentLinks', linkId), linkPayload);
+    await batch.commit();
+    return { payment: paymentRecord, linkId };
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, `paymentLinks/${linkId}`);
+  }
+}
+
 export async function getPaymentLinkPublicInCloud(
   linkId: string
 ): Promise<PaymentLinkRecord | null> {
   try {
     const snap = await getDoc(doc(db, 'paymentLinks', linkId));
     if (!snap.exists()) return null;
-    const data = snap.data();
-    return {
-      id: snap.id,
-      paymentId: String(data.paymentId ?? ''),
-      roomId: String(data.roomId ?? ''),
-      roomNumber: String(data.roomNumber ?? ''),
-      roomName: data.roomName ? String(data.roomName) : undefined,
-      tenantName: String(data.tenantName ?? ''),
-      month: String(data.month ?? ''),
-      invoiceNo: String(data.invoiceNo ?? ''),
-      amount: Number(data.amount ?? 0),
-      lateFee: typeof data.lateFee === 'number' ? data.lateFee : undefined,
-      dueDay: Number(data.dueDay ?? 10),
-      status: (data.status ?? 'Belum Bayar') as PaymentLinkStatus,
-      preferredMethod: String(data.preferredMethod ?? 'Transfer BCA'),
-      bankName: data.bankName ? String(data.bankName) : undefined,
-      accountNumber: data.accountNumber ? String(data.accountNumber) : undefined,
-      accountHolder: data.accountHolder ? String(data.accountHolder) : undefined,
-      qrisImageUrl: data.qrisImageUrl ? String(data.qrisImageUrl) : undefined,
-      externalPaymentLink: data.externalPaymentLink
-        ? String(data.externalPaymentLink)
-        : undefined,
-      paidDate: data.paidDate ? String(data.paidDate) : null,
-      method: data.method ? String(data.method) : null,
-      confirmationMethod: data.confirmationMethod
-        ? String(data.confirmationMethod)
-        : undefined,
-      confirmationNote: data.confirmationNote
-        ? String(data.confirmationNote)
-        : undefined,
-      confirmedAt: data.confirmedAt ? String(data.confirmedAt) : undefined,
-      propertyName: String(data.propertyName ?? 'Kost Putra Agan'),
-      propertyAddress: data.propertyAddress ? String(data.propertyAddress) : undefined,
-      adminName: String(data.adminName ?? 'Pengelola'),
-      whatsappAdmin: data.whatsappAdmin ? String(data.whatsappAdmin) : undefined,
-      receiptSnapshot: data.receiptSnapshot as PaymentLinkRecord['receiptSnapshot'],
-    };
+    return mapPaymentLinkSnapshotData(snap.id, snap.data() as Record<string, unknown>);
   } catch (error) {
     handleFirestoreError(error, OperationType.GET, `paymentLinks/${linkId}`);
   }
+}
+
+export function subscribeToPaymentLinkPublicInCloud(
+  linkId: string,
+  onData: (record: PaymentLinkRecord | null) => void,
+  onError?: (err: unknown) => void
+): Unsubscribe {
+  return onSnapshot(
+    doc(db, 'paymentLinks', linkId),
+    (snap) => {
+      if (!snap.exists()) {
+        onData(null);
+        return;
+      }
+      onData(mapPaymentLinkSnapshotData(snap.id, snap.data() as Record<string, unknown>));
+    },
+    (error) => {
+      if (onError) onError(error);
+    }
+  );
 }
 
 export async function confirmPaymentLinkPublicInCloud(
@@ -816,6 +958,7 @@ export async function markPaymentPaidInCloud(
     room?: Room | null;
     settings?: PropertySettings;
     receiptTemplate?: ReceiptTemplateConfig;
+    linkRecord?: PaymentLinkRecord | null;
   }
 ): Promise<PaymentRecord> {
   const paidDate = options?.paidDate || getTodayISO();
@@ -870,6 +1013,15 @@ export async function markPaymentPaidInCloud(
         receiptTemplate: options.receiptTemplate,
         statusOverride: 'Lunas',
       });
+      if (options.linkRecord?.confirmationMethod) {
+        linkPayload.confirmationMethod = options.linkRecord.confirmationMethod.slice(0, 40);
+      }
+      if (options.linkRecord?.confirmationNote) {
+        linkPayload.confirmationNote = options.linkRecord.confirmationNote.slice(0, 200);
+      }
+      if (options.linkRecord?.confirmedAt) {
+        linkPayload.confirmedAt = options.linkRecord.confirmedAt.slice(0, 30);
+      }
       batch.set(doc(db, 'paymentLinks', linkId), linkPayload);
     }
 
