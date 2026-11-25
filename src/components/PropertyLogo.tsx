@@ -7,7 +7,7 @@ interface PropertyLogoProps {
 export const PropertyLogo: React.FC<PropertyLogoProps> = ({ className = 'w-9 h-9' }) => {
   return (
     <div
-      className={`${className} rounded-xl bg-gradient-to-br from-[#0F766E] via-[#0D9488] to-[#0284C7] shadow-sm flex items-center justify-center shrink-0`}
+      className={`${className} rounded-xl nav-active-gradient shadow-sm flex items-center justify-center shrink-0`}
       aria-hidden="true"
     >
       <svg

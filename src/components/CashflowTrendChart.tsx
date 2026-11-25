@@ -183,8 +183,8 @@ export const CashflowTrendChart: React.FC<CashflowTrendChartProps> = ({
         >
           <defs>
             <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#0D9488" stopOpacity="0.16" />
-              <stop offset="100%" stopColor="#0D9488" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="var(--accent-600)" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="var(--accent-600)" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -205,7 +205,7 @@ export const CashflowTrendChart: React.FC<CashflowTrendChartProps> = ({
                   x={padLeft - 10}
                   y={y + 4}
                   textAnchor="end"
-                  className="fill-slate-400 dark:fill-slate-500 text-[10px] font-mono"
+                  className="fill-slate-400 dark:fill-slate-500 text-[10px] font-mono-num"
                 >
                   {tick === 0 ? '0' : formatShortIDR(tick)}
                 </text>
@@ -226,7 +226,7 @@ export const CashflowTrendChart: React.FC<CashflowTrendChartProps> = ({
               d={incomeLinePath}
               pathLength={1}
               fill="none"
-              stroke="#0D9488"
+              stroke="var(--accent-600)"
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"

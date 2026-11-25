@@ -86,12 +86,12 @@ export const PublicRegistrationView: React.FC<PublicRegistrationViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F6F7F9] text-slate-900">
+    <div className="min-h-screen text-slate-900 dark:text-slate-100">
       {/* Clean 3-Zone Top Bar */}
-      <header className="h-16 border-b border-slate-200/90 bg-white/95 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-8 flex items-center justify-between gap-8">
+      <header className="h-16 border-b border-slate-200/80 dark:border-white/[0.08] glass-surface sticky top-0 z-30 px-4 sm:px-8 flex items-center justify-between gap-8">
         <div className="flex items-center gap-3 shrink-0">
           <PropertyLogo className="w-8 h-8 rounded-lg" />
-          <span className="font-display font-semibold text-base text-slate-900 whitespace-nowrap">
+          <span className="font-display font-semibold text-base text-slate-900 dark:text-white whitespace-nowrap">
             {settings.name}
           </span>
         </div>
@@ -99,38 +99,41 @@ export const PublicRegistrationView: React.FC<PublicRegistrationViewProps> = ({
         <button
           type="button"
           onClick={onBackToAdmin}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700 transition-colors whitespace-nowrap shrink-0"
+          className="inline-flex items-center gap-2 min-h-[38px] px-3.5 py-2 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap shrink-0"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
           <span>{isAdminLoggedIn ? 'Kembali ke Ringkasan' : 'Portal Pengelola'}</span>
         </button>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8">
         {/* Property Overview Split */}
-        <section className="rounded-2xl overflow-hidden bg-white border border-slate-200/90 grid grid-cols-1 md:grid-cols-12 items-stretch shadow-xs">
+        <section className="rounded-2xl overflow-hidden surface-card border border-slate-200/90 dark:border-white/[0.08] grid grid-cols-1 md:grid-cols-12 items-stretch">
           <div className="md:col-span-5 relative min-h-[220px] bg-slate-900">
             {!imgError ? (
               <img
                 src={PROPERTY_EXTERIOR_IMG}
                 alt={`Gedung ${settings.name}`}
+                width={800}
+                height={600}
+                fetchPriority="high"
                 referrerPolicy="no-referrer"
                 onError={() => setImgError(true)}
-                className="w-full h-full lg:h-full object-cover"
+                className="w-full h-full object-cover"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-slate-400">
-                <Building2 className="w-12 h-12" />
+                <Building2 className="w-12 h-12" aria-hidden="true" />
               </div>
             )}
           </div>
 
           <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-center space-y-4">
-            <p className="text-xs font-semibold text-teal-700">
+            <p className="text-xs font-semibold text-teal-700 dark:text-teal-300">
               Pendaftaran Calon Penghuni
             </p>
-            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 leading-tight [text-wrap:balance]">
-              {settings.name} — {settings.tagline}
+            <h1 className="font-display text-2xl sm:text-3xl font-semibold text-slate-900 dark:text-white leading-tight [text-wrap:balance]">
+              {settings.name} · {settings.tagline}
             </h1>
             <div className="space-y-2 text-xs sm:text-sm text-slate-600">
               <p className="flex items-start gap-2">
@@ -179,10 +182,10 @@ export const PublicRegistrationView: React.FC<PublicRegistrationViewProps> = ({
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl btn-primary text-sm font-medium"
               >
                 <span>Konfirmasi via WhatsApp Admin</span>
-                <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4" aria-hidden="true" />
               </a>
               <button
                 type="button"
@@ -194,7 +197,7 @@ export const PublicRegistrationView: React.FC<PublicRegistrationViewProps> = ({
                   setEmergencyContact('');
                   setNotes('');
                 }}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-sm font-medium transition-colors"
+                className="w-full sm:w-auto min-h-[44px] px-5 py-2.5 rounded-xl btn-secondary text-sm font-medium"
               >
                 Kirim Pengajuan Lain
               </button>
@@ -216,9 +219,9 @@ export const PublicRegistrationView: React.FC<PublicRegistrationViewProps> = ({
             className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start"
           >
             {/* Step 1: Pick Room */}
-            <div className="lg:col-span-5 rounded-2xl bg-white border border-slate-200/90 p-6 space-y-4 shadow-xs">
+            <div className="lg:col-span-5 rounded-2xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-6 space-y-4">
               <div>
-                <h2 className="font-display font-semibold text-base text-slate-900">
+                <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
                   1. Pilih Kamar Tersedia ({availableRooms.length})
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -269,9 +272,9 @@ export const PublicRegistrationView: React.FC<PublicRegistrationViewProps> = ({
             </div>
 
             {/* Step 2: Applicant Biodata */}
-            <div className="lg:col-span-7 rounded-2xl bg-white border border-slate-200/90 p-6 space-y-5 shadow-xs">
+            <div className="lg:col-span-7 rounded-2xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-6 space-y-5">
               <div>
-                <h2 className="font-display font-semibold text-base text-slate-900">
+                <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
                   2. Isi Biodata Calon Penghuni
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -397,9 +400,9 @@ export const PublicRegistrationView: React.FC<PublicRegistrationViewProps> = ({
               <button
                 type="submit"
                 disabled={submitting || !activeRoom}
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-3 rounded-xl btn-primary disabled:opacity-60 text-sm font-medium"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-4 h-4" aria-hidden="true" />
                 <span>
                   {submitting
                     ? 'Mengirim Pendaftaran...'

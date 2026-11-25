@@ -9,20 +9,42 @@ import {
   RoomTypeConfig,
 } from '../types/kost';
 
-export const PROPERTY_EXTERIOR_IMG =
-  '/src/assets/images/kost_exterior_modern_1794661424390.jpg';
-export const ROOM_TIPE_A_IMG =
-  '/src/assets/images/kost_room_tipe_a_1794687114698.jpg';
-export const ROOM_DELUXE_IMG =
-  '/src/assets/images/kost_room_deluxe_1794661423972.jpg';
-export const ROOM_TIPE_C_IMG =
-  '/src/assets/images/kost_room_tipe_c_1794687114871.jpg';
-export const ROOM_DESK_IMG =
-  '/src/assets/images/kost_interior_desk_1794687809427.jpg';
-export const ROOM_BATHROOM_IMG =
-  '/src/assets/images/kost_interior_bathroom_1794687810321.jpg';
-export const ROOM_BED_DETAIL_IMG =
-  '/src/assets/images/kost_interior_bed_detail_1794687810662.jpg';
+import kostExteriorModernImg from '../assets/images/kost_exterior_modern_1794661424390.jpg';
+import kostRoomTipeAImg from '../assets/images/kost_room_tipe_a_1794687114698.jpg';
+import kostRoomDeluxeImg from '../assets/images/kost_room_deluxe_1794661423972.jpg';
+import kostRoomTipeCImg from '../assets/images/kost_room_tipe_c_1794687114871.jpg';
+import kostInteriorDeskImg from '../assets/images/kost_interior_desk_1794687809427.jpg';
+import kostInteriorBathroomImg from '../assets/images/kost_interior_bathroom_1794687810321.jpg';
+import kostInteriorBedDetailImg from '../assets/images/kost_interior_bed_detail_1794687810662.jpg';
+
+export const PROPERTY_EXTERIOR_IMG = kostExteriorModernImg;
+export const ROOM_TIPE_A_IMG = kostRoomTipeAImg;
+export const ROOM_DELUXE_IMG = kostRoomDeluxeImg;
+export const ROOM_TIPE_C_IMG = kostRoomTipeCImg;
+export const ROOM_DESK_IMG = kostInteriorDeskImg;
+export const ROOM_BATHROOM_IMG = kostInteriorBathroomImg;
+export const ROOM_BED_DETAIL_IMG = kostInteriorBedDetailImg;
+
+const BUNDLED_ASSET_MATCHERS: Array<[string, string]> = [
+  ['kost_exterior_modern_1794661424390', PROPERTY_EXTERIOR_IMG],
+  ['kost_room_tipe_a_1794687114698', ROOM_TIPE_A_IMG],
+  ['kost_room_deluxe_1794661423972', ROOM_DELUXE_IMG],
+  ['kost_room_tipe_c_1794687114871', ROOM_TIPE_C_IMG],
+  ['kost_interior_desk_1794687809427', ROOM_DESK_IMG],
+  ['kost_interior_bathroom_1794687810321', ROOM_BATHROOM_IMG],
+  ['kost_interior_bed_detail_1794687810662', ROOM_BED_DETAIL_IMG],
+];
+
+export function resolveAssetImageUrl(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed || trimmed.startsWith('data:')) return trimmed;
+  for (const [key, bundledUrl] of BUNDLED_ASSET_MATCHERS) {
+    if (trimmed.includes(key)) {
+      return bundledUrl;
+    }
+  }
+  return trimmed;
+}
 
 export function normalizeRoomTier(raw: unknown): RoomTier {
   const val = String(raw ?? '').trim().toLowerCase();
@@ -52,6 +74,8 @@ export const DEFAULT_SETTINGS: PropertySettings = {
   totalRooms: 16,
   defaultDueDay: 10,
   theme: 'light',
+  uiColorPreset: 'emerald',
+  uiCustomColor: '#0f766e',
   rates: {
     standar: 1750000,
     deluxe: 1800000,

@@ -178,6 +178,15 @@ export interface MonthlyHistoricalSummary {
   expense: number;
 }
 
+export type UiColorPreset =
+  | 'emerald'
+  | 'ocean'
+  | 'indigo'
+  | 'amber'
+  | 'rose'
+  | 'slate'
+  | 'custom';
+
 export interface PropertySettings {
   name: string;
   tagline: string;
@@ -194,6 +203,8 @@ export interface PropertySettings {
   totalRooms: number;
   defaultDueDay: number;
   theme: 'dark' | 'light';
+  uiColorPreset?: UiColorPreset;
+  uiCustomColor?: string;
   rates: {
     standar: number;
     deluxe: number;

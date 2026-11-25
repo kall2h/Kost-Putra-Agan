@@ -28,7 +28,7 @@ interface PublicPaymentViewProps {
 }
 
 const ACCENT_HEADER_CLASS = {
-  teal: 'from-[#0c4a49] to-[#0f6b66]',
+  teal: 'from-[#0b4642] via-[#0f6b64] to-[#0d8278]',
   navy: 'from-[#0F172A] to-[#1E3A8A]',
   slate: 'from-[#0F172A] to-[#334155]',
 };
@@ -143,7 +143,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f6f9f9] flex items-center justify-center p-6">
+      <div className="min-h-screen flex items-center justify-center p-6">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-teal-700 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm text-slate-600">Memuat tautan pembayaran resmi...</p>
@@ -154,9 +154,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
 
   if (errorMsg || !linkData) {
     return (
-      <div className="min-h-screen bg-[#f6f9f9] flex items-center justify-center p-6">
-        <div className="max-w-md w-full rounded-xl bg-white border border-slate-200 shadow-sm p-6 text-center space-y-4">
-          <AlertCircle className="w-10 h-10 text-rose-600 mx-auto" />
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-2xl surface-card border border-slate-200 p-6 text-center space-y-4">
+          <AlertCircle className="w-10 h-10 text-rose-600 mx-auto" aria-hidden="true" />
           <div className="space-y-1">
             <h1 className="font-display font-semibold text-lg text-slate-900">
               Tautan Tidak Tersedia
@@ -168,9 +168,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
           <button
             type="button"
             onClick={fetchLink}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg btn-primary text-sm font-medium"
+            className="inline-flex items-center gap-2 min-h-[40px] px-4 py-2 rounded-xl btn-primary text-sm font-medium"
           >
-            <RefreshCw className="w-4 h-4" />
+            <RefreshCw className="w-4 h-4" aria-hidden="true" />
             <span>Coba Muat Ulang</span>
           </button>
         </div>
@@ -202,11 +202,11 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
     : '';
 
   return (
-    <div className="min-h-screen bg-[#f6f9f9] text-slate-900 py-8 px-4">
+    <div className="min-h-screen text-slate-900 py-8 px-4">
       <div className="max-w-2xl mx-auto space-y-5">
         {/* Header Card */}
         <div
-          className={`rounded-xl bg-gradient-to-br ${ACCENT_HEADER_CLASS[accentTheme]} text-white p-6 shadow-sm no-print`}
+          className={`rounded-2xl bg-gradient-to-br ${ACCENT_HEADER_CLASS[accentTheme]} text-white p-6 shadow-md no-print`}
         >
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -222,7 +222,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wider text-teal-100">
+              <p className="text-[11px] font-medium text-teal-100">
                 No. Invoice
               </p>
               <p className="font-mono-num text-sm font-semibold">{linkData.invoiceNo}</p>
@@ -239,9 +239,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
             <button
               type="button"
               onClick={fetchLink}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-medium text-white transition-colors"
+              className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-medium text-white"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Segarkan Status</span>
             </button>
           </div>
@@ -251,11 +251,11 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
         {isPaid ? (
           <div
             id="printable-receipt"
-            className="rounded-xl bg-white border border-slate-200 shadow-sm overflow-hidden"
+            className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden"
           >
             <div className="px-6 py-4 bg-emerald-50/70 border-b border-emerald-200/80 flex flex-wrap items-center justify-between gap-3 no-print">
               <div className="flex items-center gap-2 text-emerald-800">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" aria-hidden="true" />
                 <div>
                   <p className="text-sm font-semibold">Pembayaran Lunas &amp; Terverifikasi</p>
                   <p className="text-xs text-emerald-700">
@@ -267,18 +267,18 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-xs font-medium text-slate-700"
+                  className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-2 rounded-xl btn-secondary text-xs font-medium"
                 >
-                  <Printer className="w-3.5 h-3.5" />
+                  <Printer className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Cetak</span>
                 </button>
                 <button
                   type="button"
                   disabled={downloadingPdf}
                   onClick={handleDownloadPdf}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-xs font-semibold"
+                  className="inline-flex items-center gap-1.5 min-h-[38px] px-4 py-2 rounded-xl btn-primary text-xs font-semibold"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-4 h-4" aria-hidden="true" />
                   <span>
                     {downloadingPdf ? 'Menyiapkan PDF...' : 'Unduh Bukti Kwitansi (PDF)'}
                   </span>
@@ -308,7 +308,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-xs uppercase tracking-wider font-bold text-teal-700">
+                  <p className="text-xs font-bold tracking-wide text-teal-700">
                     {snap?.title || 'KWITANSI SEWA RESMI'}
                   </p>
                   <p className="font-mono-num text-xs font-semibold text-slate-900 mt-1">
@@ -503,8 +503,8 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
               {(linkData.bankName || linkData.accountNumber) && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-teal-800">
-                    <Landmark className="w-4 h-4" />
-                    <span className="text-xs font-semibold uppercase tracking-wider">
+                    <Landmark className="w-4 h-4" aria-hidden="true" />
+                    <span className="font-display text-xs font-semibold">
                       Transfer Bank {linkData.bankName || 'Rekening Pengelola'}
                     </span>
                   </div>
@@ -525,9 +525,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                         onClick={() =>
                           handleCopyAccount(linkData.accountNumber!, 'Nomor rekening')
                         }
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 hover:border-teal-600 hover:text-teal-800"
+                        className="inline-flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium"
                       >
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>Salin No. Rek</span>
                       </button>
                     )}
@@ -537,8 +537,8 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
 
               {linkData.qrisImageUrl && (
                 <div className="pt-4 border-t border-slate-100 space-y-3 text-center">
-                  <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-700">
-                    <QrCode className="w-4 h-4 text-teal-700" />
+                  <div className="inline-flex items-center gap-1.5 font-display text-xs font-semibold text-slate-700">
+                    <QrCode className="w-4 h-4 text-teal-700" aria-hidden="true" />
                     <span>Scan QRIS Pembayaran</span>
                   </div>
                   <div className="max-w-[240px] mx-auto bg-white p-3 rounded-xl border border-slate-200">
@@ -560,9 +560,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                   href={linkData.externalPaymentLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-slate-200 bg-slate-50 hover:border-teal-600 text-sm font-semibold text-teal-800 transition-colors"
+                  className="w-full inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-3 rounded-xl btn-secondary text-sm font-semibold text-teal-800"
                 >
-                  <ExternalLink className="w-4 h-4" />
+                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
                   <span>Buka Tautan Pembayaran Khusus Kamar</span>
                 </a>
               )}
@@ -570,9 +570,9 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
 
             {/* Tenant Payment Confirmation Form OR Pending Status */}
             {isPendingVerify ? (
-              <div className="rounded-xl bg-amber-50 border border-amber-300/80 p-6 space-y-4">
+              <div className="rounded-2xl bg-amber-50 border border-amber-300/80 p-6 space-y-4">
                 <div className="flex items-start gap-3">
-                  <Clock3 className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                  <Clock3 className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" aria-hidden="true" />
                   <div className="space-y-1">
                     <h3 className="font-display font-semibold text-base text-amber-950">
                       Konfirmasi Pembayaran Terkirim
@@ -595,18 +595,18 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                       href={waAdminUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-xs font-medium"
+                      className="inline-flex items-center gap-1.5 min-h-[38px] px-4 py-2 rounded-xl btn-primary text-xs font-medium"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                       <span>Kirim Bukti Transfer ke WhatsApp Admin</span>
                     </a>
                   )}
                   <button
                     type="button"
                     onClick={fetchLink}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-white border border-amber-300 text-xs font-medium text-amber-900"
+                    className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 py-2 rounded-xl bg-white border border-amber-300 hover:bg-amber-100/60 text-xs font-medium text-amber-900"
                   >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>Cek Status Kwitansi PDF</span>
                   </button>
                 </div>
@@ -614,7 +614,7 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
             ) : (
               <form
                 onSubmit={handleConfirmPayment}
-                className="rounded-xl bg-white border border-slate-200 shadow-sm p-6 space-y-4"
+                className="rounded-2xl bg-white border border-slate-200 shadow-sm p-6 space-y-4"
               >
                 <div>
                   <h3 className="font-display font-semibold text-base text-slate-900">
@@ -664,16 +664,16 @@ export const PublicPaymentView: React.FC<PublicPaymentViewProps> = ({ linkId }) 
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-700 hover:underline"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                       <span>Tanya Admin via WhatsApp</span>
                     </a>
                   )}
                   <button
                     type="submit"
                     disabled={submittingConfirm}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg btn-primary text-sm font-medium ml-auto"
+                    className="inline-flex items-center gap-2 min-h-[42px] px-5 py-2.5 rounded-xl btn-primary text-sm font-medium ml-auto"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
                     <span>
                       {submittingConfirm
                         ? 'Mengirim Konfirmasi...'

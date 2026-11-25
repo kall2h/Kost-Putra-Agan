@@ -333,6 +333,8 @@ export async function seedInitialDatabaseIfEmpty(): Promise<boolean> {
       adminName: DEFAULT_SETTINGS.adminName.slice(0, 80),
       adminInitials: DEFAULT_SETTINGS.adminInitials.slice(0, 4),
       theme: DEFAULT_SETTINGS.theme,
+      uiColorPreset: DEFAULT_SETTINGS.uiColorPreset ?? 'emerald',
+      uiCustomColor: DEFAULT_SETTINGS.uiCustomColor ?? '#0f766e',
       updatedAt: serverTimestamp(),
     });
 
@@ -499,6 +501,8 @@ export async function resetDatabaseToDemo(): Promise<void> {
       adminName: DEFAULT_SETTINGS.adminName,
       adminInitials: DEFAULT_SETTINGS.adminInitials,
       theme: DEFAULT_SETTINGS.theme,
+      uiColorPreset: DEFAULT_SETTINGS.uiColorPreset ?? 'emerald',
+      uiCustomColor: DEFAULT_SETTINGS.uiCustomColor ?? '#0f766e',
       updatedAt: serverTimestamp(),
     });
 
@@ -1101,10 +1105,19 @@ export async function saveSettingsInCloud(updated: PropertySettings): Promise<vo
       totalRooms: updated.totalRooms,
       updatedAt: serverTimestamp(),
     });
+    const validPresets = new Set(['emerald', 'ocean', 'indigo', 'amber', 'rose', 'slate', 'custom']);
+    const preset = validPresets.has(String(updated.uiColorPreset ?? 'emerald'))
+      ? (updated.uiColorPreset ?? 'emerald')
+      : 'emerald';
+    const rawHex = String(updated.uiCustomColor ?? '#0f766e').trim();
+    const safeCustomHex = /^#[0-9a-fA-F]{6}$/.test(rawHex) ? rawHex.toLowerCase() : '#0f766e';
+
     batch.set(doc(db, 'settings', 'admin'), {
-      adminName: updated.adminName.trim().slice(0, 80),
-      adminInitials: updated.adminInitials.trim().slice(0, 4),
+      adminName: updated.adminName.trim().slice(0, 80) || 'Admin',
+      adminInitials: updated.adminInitials.trim().slice(0, 4) || 'AD',
       theme: updated.theme,
+      uiColorPreset: preset,
+      uiCustomColor: safeCustomHex,
       updatedAt: serverTimestamp(),
     });
     await batch.commit();

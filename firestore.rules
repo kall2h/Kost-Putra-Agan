@@ -346,10 +346,12 @@ service cloud.firestore {
 
     function isValidAdminPreferences(data) {
       return data.keys().hasAll(['adminName', 'adminInitials', 'theme', 'updatedAt'])
-        && data.keys().hasOnly(['adminName', 'adminInitials', 'theme', 'updatedAt'])
+        && data.keys().hasOnly(['adminName', 'adminInitials', 'theme', 'uiColorPreset', 'uiCustomColor', 'updatedAt'])
         && data.adminName is string && data.adminName.size() >= 1 && data.adminName.size() <= 80
         && data.adminInitials is string && data.adminInitials.size() >= 1 && data.adminInitials.size() <= 4
         && data.theme in ['dark', 'light']
+        && (!('uiColorPreset' in data) || (data.uiColorPreset is string && data.uiColorPreset in ['emerald', 'ocean', 'indigo', 'amber', 'rose', 'slate', 'custom']))
+        && (!('uiCustomColor' in data) || (data.uiCustomColor is string && data.uiCustomColor.size() == 7 && data.uiCustomColor.matches('^#[0-9a-fA-F]{6}$')))
         && data.updatedAt is timestamp;
     }
 

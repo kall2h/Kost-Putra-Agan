@@ -32,6 +32,7 @@ import {
   HISTORICAL_CASHFLOW,
   INITIAL_ROOMS,
   normalizeRoomTier,
+  resolveAssetImageUrl,
 } from './data/initialData';
 import {
   AdminInvite,
@@ -62,7 +63,14 @@ import {
   RoomTypeId,
   Tenant,
   TenantHistoryRecord,
+  UiColorPreset,
 } from './types/kost';
+import {
+  applyUiColorPalette,
+  cacheLocalUiPalette,
+  readCachedUiPalette,
+  resetUiColorPalette,
+} from './utils/themePalette';
 import {
   addAdminInviteInCloud,
   addExpenseInCloud,
@@ -196,7 +204,16 @@ export default function App() {
   const [tenantHistory, setTenantHistory] = useState<TenantHistoryRecord[]>([]);
   const [registeredAdmins, setRegisteredAdmins] = useState<AdminUser[]>([]);
   const [adminInvites, setAdminInvites] = useState<AdminInvite[]>([]);
-  const [settings, setSettings] = useState<PropertySettings>(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState<PropertySettings>(() => {
+    const cached = readCachedUiPalette();
+    return cached
+      ? {
+          ...DEFAULT_SETTINGS,
+          uiColorPreset: cached.preset,
+          uiCustomColor: cached.customColor,
+        }
+      : DEFAULT_SETTINGS;
+  });
 
   // Test Firestore connection on boot
   useEffect(() => {
@@ -306,11 +323,11 @@ export default function App() {
             ? (data.images as Array<{ url?: unknown; label?: unknown }>)
                 .filter((item) => item && typeof item.url === 'string' && item.url.trim())
                 .map((item, idx) => ({
-                  url: String(item.url),
+                  url: resolveAssetImageUrl(String(item.url)),
                   label: String(item.label ?? `Foto ${idx + 1}`),
                 }))
             : [];
-          const coverUrl = String(data.imageUrl ?? fallback.imageUrl);
+          const coverUrl = resolveAssetImageUrl(String(data.imageUrl ?? fallback.imageUrl));
           const mergedImages: RoomGalleryImage[] =
             rawImages.length > 0
               ? rawImages
@@ -650,12 +667,35 @@ export default function App() {
       (snap) => {
         if (!snap.exists()) return;
         const data = snap.data();
-        setSettings((prev) => ({
-          ...prev,
-          adminName: String(data.adminName ?? prev.adminName),
-          adminInitials: String(data.adminInitials ?? prev.adminInitials),
-          theme: (data.theme === 'light' ? 'light' : 'dark') as 'dark' | 'light',
-        }));
+        const validPresets: UiColorPreset[] = [
+          'emerald',
+          'ocean',
+          'indigo',
+          'amber',
+          'rose',
+          'slate',
+          'custom',
+        ];
+        const nextPreset = validPresets.includes(data.uiColorPreset as UiColorPreset)
+          ? (data.uiColorPreset as UiColorPreset)
+          : undefined;
+        const nextCustomColor =
+          typeof data.uiCustomColor === 'string' && /^#[0-9a-fA-F]{6}$/.test(data.uiCustomColor)
+            ? data.uiCustomColor.toLowerCase()
+            : undefined;
+        setSettings((prev) => {
+          const updatedPreset = nextPreset ?? prev.uiColorPreset ?? 'emerald';
+          const updatedColor = nextCustomColor ?? prev.uiCustomColor ?? '#0f766e';
+          cacheLocalUiPalette(updatedPreset, updatedColor);
+          return {
+            ...prev,
+            adminName: String(data.adminName ?? prev.adminName),
+            adminInitials: String(data.adminInitials ?? prev.adminInitials),
+            theme: (data.theme === 'light' ? 'light' : 'dark') as 'dark' | 'light',
+            uiColorPreset: updatedPreset,
+            uiCustomColor: updatedColor,
+          };
+        });
       },
       (error) => handleFirestoreError(error, OperationType.GET, 'settings/admin')
     );
@@ -678,11 +718,12 @@ export default function App() {
     };
   }, [publicPayLinkId, authReady, currentUser, isAdmin, activeMonth]);
 
-  // Sync theme class on <html>
+  // Sync theme class & UI color palette on <html>
   useEffect(() => {
     const root = document.documentElement;
     if (publicPayLinkId || !isAdmin) {
       root.classList.remove('dark');
+      resetUiColorPalette();
       return;
     }
     if (settings.theme === 'dark') {
@@ -690,7 +731,8 @@ export default function App() {
     } else {
       root.classList.remove('dark');
     }
-  }, [publicPayLinkId, settings.theme, isAdmin]);
+    applyUiColorPalette(settings.uiColorPreset, settings.uiCustomColor);
+  }, [publicPayLinkId, settings.theme, settings.uiColorPreset, settings.uiCustomColor, isAdmin]);
 
   // Auto-dismiss toast
   useEffect(() => {
@@ -1090,7 +1132,7 @@ export default function App() {
     const autoPdf = await runPaidReceiptAutomation(updated, targetRoom);
     setToastMessage(
       autoPdf
-        ? `Kamar ${target.roomNumber} Lunas — Kwitansi PDF otomatis dibuat & diunduh`
+        ? `Kamar ${target.roomNumber} Lunas · Kwitansi PDF otomatis dibuat & diunduh`
         : `Pembayaran Kamar ${target.roomNumber} (${target.tenantName}) ditandai Lunas`
     );
   };
@@ -1239,7 +1281,7 @@ export default function App() {
     const autoPdf = await runPaidReceiptAutomation(saved, targetRoom);
     setToastMessage(
       autoPdf
-        ? `Kamar ${payload.roomNumber} dicatat Lunas — Kwitansi PDF otomatis diunduh`
+        ? `Kamar ${payload.roomNumber} dicatat Lunas · Kwitansi PDF otomatis diunduh`
         : `Pembayaran Kamar ${payload.roomNumber} (${payload.tenantName}) dicatat Lunas`
     );
   };
@@ -1344,6 +1386,10 @@ export default function App() {
 
   const handleSaveSettings = async (updated: PropertySettings) => {
     setSettings(updated);
+    cacheLocalUiPalette(
+      updated.uiColorPreset ?? 'emerald',
+      updated.uiCustomColor ?? '#0f766e'
+    );
     await saveSettingsInCloud(updated);
   };
 
@@ -1597,7 +1643,7 @@ export default function App() {
           onNavigateSettings={() => setActivePage('settings')}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1440px] w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-5 lg:p-6 max-w-[1440px] w-full mx-auto">
           <div key={activePage} className="animate-page-enter">
           {activePage === 'dashboard' && (
             <DashboardView

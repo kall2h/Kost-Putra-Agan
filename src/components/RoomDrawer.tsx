@@ -431,7 +431,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
+        className="fixed inset-0 bg-slate-950/50 animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -439,7 +439,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={`Detail ${displayName}`}
-        className="relative z-10 w-full max-w-md h-full bg-white dark:bg-[#0f1a1e] border-l border-slate-200 dark:border-white/[0.08] shadow-xl flex flex-col overflow-hidden animate-drawer-in"
+        className="relative z-10 w-full max-w-md h-full bg-white dark:bg-[#0e191d] border-l border-slate-200 dark:border-white/[0.08] shadow-xl flex flex-col overflow-hidden animate-drawer-in"
       >
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between gap-2">
@@ -458,18 +458,18 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                 setActiveTab('info');
                 setEditingUnit((v) => !v);
               }}
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1 min-h-[34px] px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
             >
-              <Pencil className="w-3.5 h-3.5" />
+              <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Ubah Kamar</span>
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
+              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
               aria-label="Tutup panel"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -479,9 +479,9 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('info')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+            className={`flex-1 min-h-[34px] py-1.5 px-2.5 rounded-xl text-xs font-medium whitespace-nowrap ${
               activeTab === 'info'
-                ? 'bg-teal-50 dark:bg-teal-500/15 text-teal-800 dark:text-teal-200'
+                ? 'nav-active-gradient text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
             }`}
           >
@@ -490,25 +490,25 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
           <button
             type="button"
             onClick={() => setActiveTab('maintenance')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-medium inline-flex items-center justify-center gap-1 transition-colors whitespace-nowrap ${
+            className={`flex-1 min-h-[34px] py-1.5 px-2.5 rounded-xl text-xs font-medium inline-flex items-center justify-center gap-1 whitespace-nowrap ${
               activeTab === 'maintenance'
-                ? 'bg-teal-50 dark:bg-teal-500/15 text-teal-800 dark:text-teal-200'
+                ? 'nav-active-gradient text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
             }`}
           >
-            <Wrench className="w-3 h-3" />
+            <Wrench className="w-3 h-3" aria-hidden="true" />
             <span>Perawatan ({roomMaintenance.length})</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('history')}
-            className={`flex-1 py-1.5 px-2.5 rounded-lg text-xs font-medium inline-flex items-center justify-center gap-1 transition-colors whitespace-nowrap ${
+            className={`flex-1 min-h-[34px] py-1.5 px-2.5 rounded-xl text-xs font-medium inline-flex items-center justify-center gap-1 whitespace-nowrap ${
               activeTab === 'history'
-                ? 'bg-teal-50 dark:bg-teal-500/15 text-teal-800 dark:text-teal-200'
+                ? 'nav-active-gradient text-white'
                 : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/[0.04]'
             }`}
           >
-            <History className="w-3 h-3" />
+            <History className="w-3 h-3" aria-hidden="true" />
             <span>Riwayat ({roomHistory.length})</span>
           </button>
         </div>
@@ -624,16 +624,16 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                       <button
                         type="button"
                         onClick={() => setEditingUnit(false)}
-                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] text-xs font-medium text-slate-600 dark:text-slate-300"
+                        className="min-h-[34px] px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium"
                       >
                         Batal
                       </button>
                       <button
                         type="submit"
                         disabled={savingUnit}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-primary text-xs font-medium"
+                        className="inline-flex items-center gap-1.5 min-h-[34px] px-3.5 py-1.5 rounded-xl btn-primary text-xs font-medium"
                       >
-                        <Save className="w-3.5 h-3.5" />
+                        <Save className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>{savingUnit ? 'Menyimpan...' : 'Simpan Unit'}</span>
                       </button>
                     </div>
@@ -682,7 +682,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
               {isOccupied && room.tenant ? (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.07] pb-2">
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    <h3 className="font-display text-xs font-semibold text-slate-600 dark:text-slate-300">
                       Profil Penyewa Aktif
                     </h3>
                     <button
@@ -839,16 +839,16 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                         <button
                           type="button"
                           onClick={() => setEditingTenant(false)}
-                          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] text-xs"
+                          className="min-h-[34px] px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium"
                         >
                           Batal
                         </button>
                         <button
                           type="submit"
                           disabled={savingTenant}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg btn-primary text-xs font-medium"
+                          className="inline-flex items-center gap-1 min-h-[34px] px-3.5 py-1.5 rounded-xl btn-primary text-xs font-medium"
                         >
-                          <Save className="w-3.5 h-3.5" />
+                          <Save className="w-3.5 h-3.5" aria-hidden="true" />
                           <span>{savingTenant ? 'Menyimpan...' : 'Simpan Profil'}</span>
                         </button>
                       </div>
@@ -915,7 +915,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                   {currentMonthPayment && (
                     <div className="pt-2 space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.07] pb-2">
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <h3 className="font-display text-xs font-semibold text-slate-600 dark:text-slate-300">
                           Tagihan {formatMonthYear(currentMonthPayment.month)}
                         </h3>
                         <span
@@ -951,9 +951,9 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                         <button
                           type="button"
                           onClick={() => onOpenReceipt(currentMonthPayment)}
-                          className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg btn-primary text-sm font-medium transition-colors"
+                          className="w-full inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-2.5 rounded-xl btn-primary text-sm font-medium"
                         >
-                          <ReceiptText className="w-4 h-4" />
+                          <ReceiptText className="w-4 h-4" aria-hidden="true" />
                           <span>Lihat &amp; Unduh Kwitansi PDF</span>
                         </button>
                       ) : (
@@ -961,18 +961,18 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                           <button
                             type="button"
                             onClick={() => onMarkPaid(currentMonthPayment.id)}
-                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg btn-primary text-sm font-medium transition-colors"
+                            className="w-full inline-flex items-center justify-center gap-1.5 min-h-[42px] px-3 py-2.5 rounded-xl btn-primary text-sm font-medium"
                           >
-                            <CheckCircle2 className="w-4 h-4" />
+                            <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
                             <span>Tandai Lunas &amp; Terbitkan PDF</span>
                           </button>
                           <button
                             type="button"
                             disabled={creatingLink}
                             onClick={handleCopyPaymentLink}
-                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.12] hover:bg-slate-50 dark:hover:bg-white/[0.05] text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
+                            className="w-full inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 py-2 rounded-xl btn-secondary text-xs font-medium"
                           >
-                            <Link2 className="w-3.5 h-3.5 text-teal-700 dark:text-teal-300" />
+                            <Link2 className="w-3.5 h-3.5 text-teal-700 dark:text-teal-300" aria-hidden="true" />
                             <span>
                               {creatingLink
                                 ? 'Menyiapkan Link...'
@@ -987,18 +987,18 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                               onClick={() =>
                                 onCopyReminder(room, billTotal, currentMonthPayment)
                               }
-                              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.12] hover:bg-slate-50 dark:hover:bg-white/[0.05] text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
+                              className="inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 py-2 rounded-xl btn-secondary text-xs font-medium"
                             >
-                              <Copy className="w-3.5 h-3.5" />
+                              <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                               <span>Salin Pesan</span>
                             </button>
                             <a
                               href={waUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.12] hover:bg-slate-50 dark:hover:bg-white/[0.05] text-teal-700 dark:text-teal-300 text-xs font-medium transition-colors"
+                              className="inline-flex items-center justify-center gap-1.5 min-h-[38px] px-3 py-2 rounded-xl btn-secondary text-teal-700 dark:text-teal-300 text-xs font-medium"
                             >
-                              <ExternalLink className="w-3.5 h-3.5" />
+                              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                               <span>Kirim WA</span>
                             </a>
                           </div>
@@ -1028,9 +1028,9 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                         status: 'Tersedia',
                       })
                     }
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg btn-primary text-sm font-medium transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-2.5 rounded-xl btn-primary text-sm font-medium"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
                     <span>Tandai Siap Huni (Tersedia)</span>
                   </button>
                 </div>
@@ -1049,9 +1049,9 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                       onClose();
                       onOpenCheckIn(room.number);
                     }}
-                    className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg btn-primary text-sm font-medium transition-colors"
+                    className="w-full inline-flex items-center justify-center gap-2 min-h-[42px] px-4 py-2.5 rounded-xl btn-primary text-sm font-medium"
                   >
-                    <UserPlus className="w-4 h-4" />
+                    <UserPlus className="w-4 h-4" aria-hidden="true" />
                     <span>Check-In Penyewa Baru</span>
                   </button>
                 </div>
@@ -1061,8 +1061,8 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
               <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5">
-                    <CreditCard className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                    <CreditCard className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden="true" />
+                    <h3 className="font-display text-xs font-semibold text-slate-600 dark:text-slate-300">
                       Profil Pembayaran &amp; Kwitansi Kamar
                     </h3>
                   </div>
@@ -1104,10 +1104,10 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                       <button
                         type="button"
                         onClick={() => setProfileUseCustom(false)}
-                        className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                        className={`min-h-[34px] px-2.5 py-1.5 rounded-xl text-xs font-medium ${
                           !profileUseCustom
-                            ? 'bg-teal-50 dark:bg-teal-500/15 border-teal-600/40 text-teal-800 dark:text-teal-200'
-                            : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300'
+                            ? 'nav-active-gradient text-white'
+                            : 'btn-secondary'
                         }`}
                       >
                         Default Properti
@@ -1115,10 +1115,10 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                       <button
                         type="button"
                         onClick={() => setProfileUseCustom(true)}
-                        className={`px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-colors ${
+                        className={`min-h-[34px] px-2.5 py-1.5 rounded-xl text-xs font-medium ${
                           profileUseCustom
-                            ? 'bg-teal-50 dark:bg-teal-500/15 border-teal-600/40 text-teal-800 dark:text-teal-200'
-                            : 'border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-300'
+                            ? 'nav-active-gradient text-white'
+                            : 'btn-secondary'
                         }`}
                       >
                         Profil Khusus Kamar
@@ -1242,16 +1242,16 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                       <button
                         type="button"
                         onClick={() => setEditingProfile(false)}
-                        className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] text-xs"
+                        className="min-h-[34px] px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium"
                       >
                         Batal
                       </button>
                       <button
                         type="submit"
                         disabled={savingProfile}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg btn-primary text-xs font-medium"
+                        className="inline-flex items-center gap-1 min-h-[34px] px-3.5 py-1.5 rounded-xl btn-primary text-xs font-medium"
                       >
-                        <Save className="w-3.5 h-3.5" />
+                        <Save className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>{savingProfile ? 'Menyimpan...' : 'Simpan Profil'}</span>
                       </button>
                     </div>
@@ -1261,7 +1261,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
 
               {/* Facilities List */}
               <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
+                <h3 className="font-display text-xs font-semibold text-slate-600 dark:text-slate-300 mb-3">
                   Fasilitas Termasuk
                 </h3>
                 <ul className="grid grid-cols-1 gap-2 text-sm text-slate-700 dark:text-slate-300">
@@ -1295,9 +1295,9 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => setAddingMnt((v) => !v)}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg btn-primary text-xs font-medium"
+                  className="inline-flex items-center gap-1 min-h-[34px] px-3 py-1.5 rounded-xl btn-primary text-xs font-medium"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Catat</span>
                 </button>
               </div>
@@ -1398,14 +1398,14 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => setAddingMnt(false)}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] text-xs"
+                      className="min-h-[34px] px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium"
                     >
                       Batal
                     </button>
                     <button
                       type="submit"
                       disabled={savingMnt}
-                      className="px-3 py-1.5 rounded-lg btn-primary text-xs font-medium"
+                      className="min-h-[34px] px-3.5 py-1.5 rounded-xl btn-primary text-xs font-medium"
                     >
                       {savingMnt ? 'Menyimpan...' : 'Simpan Catatan'}
                     </button>
@@ -1554,9 +1554,9 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
               <button
                 type="button"
                 onClick={() => setConfirmCheckOut(true)}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-sm font-medium transition-colors"
+                className="w-full inline-flex items-center justify-center gap-2 min-h-[40px] px-4 py-2 rounded-xl btn-secondary text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:border-rose-300 dark:hover:border-rose-500/30 hover:text-rose-700 text-sm font-medium"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-4 h-4" aria-hidden="true" />
                 <span>Proses Check-Out Penyewa</span>
               </button>
             ) : (
@@ -1576,7 +1576,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                         onChange={(e) =>
                           setCheckoutDepositStatus(e.target.value as DepositStatus)
                         }
-                        className="px-2 py-1 rounded input-surface border text-xs"
+                        className="px-2 py-1 rounded-lg input-surface border text-xs"
                       >
                         <option value="Dikembalikan">Dikembalikan ke Penyewa</option>
                         <option value="Disimpan">Dipotong / Disimpan</option>
@@ -1587,7 +1587,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                   <button
                     type="button"
                     onClick={() => setConfirmCheckOut(false)}
-                    className="px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05]"
+                    className="min-h-[38px] px-3 py-2 rounded-xl btn-secondary text-xs font-medium"
                   >
                     Batal
                   </button>
@@ -1597,7 +1597,7 @@ export const RoomDrawer: React.FC<RoomDrawerProps> = ({
                       setConfirmCheckOut(false);
                       await onCheckOut(room, checkoutDepositStatus);
                     }}
-                    className="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium"
+                    className="min-h-[38px] px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium"
                   >
                     Ya, Kosongkan Kamar
                   </button>

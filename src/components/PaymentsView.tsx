@@ -1,8 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
   Search,
-  CheckCircle2,
-  Clock3,
   ReceiptText,
   Copy,
   CalendarPlus,
@@ -96,7 +94,6 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
   );
   const [generating, setGenerating] = useState(false);
 
-  // Inline late fee / amount editor
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState(0);
   const [editLateFee, setEditLateFee] = useState(0);
@@ -191,30 +188,35 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
   };
 
   return (
-    <div className="space-y-5">
-      {/* Top Metric Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 rounded-xl gradient-hero-card border border-teal-800/20">
-          <p className="text-xs text-teal-100">
+    <div className="space-y-4">
+      {/* Ringkasan Pembayaran Terpadu */}
+      <section
+        aria-label="Ringkasan Pembayaran"
+        className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-white/[0.07]"
+      >
+        <div className="p-4 sm:p-5 focal-surface">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Terkumpul ({formatMonthYear(selectedMonth)})
           </p>
-          <p className="font-mono-num text-xl sm:text-2xl font-semibold text-white mt-1.5">
+          <p className="font-mono-num text-xl sm:text-2xl font-semibold text-teal-800 dark:text-teal-300 mt-1">
             {formatIDR(summary.collected)}
           </p>
         </div>
 
-        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
+        <div className="p-4 sm:p-5">
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Menunggu Pelunasan
           </p>
-          <p className="font-mono-num text-xl sm:text-2xl font-semibold text-rose-600 dark:text-rose-400 mt-1.5">
+          <p className="font-mono-num text-xl sm:text-2xl font-semibold text-rose-600 dark:text-rose-400 mt-1">
             {formatIDR(summary.pending)}
           </p>
         </div>
 
-        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
-          <p className="text-xs text-slate-500 dark:text-slate-400">Tingkat Kolektibilitas</p>
-          <div className="flex items-baseline gap-2 mt-1.5">
+        <div className="p-4 sm:p-5">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Tingkat Kolektibilitas
+          </p>
+          <div className="flex items-baseline gap-2 mt-1">
             <p className="font-mono-num text-xl sm:text-2xl font-semibold text-slate-900 dark:text-white">
               {summary.rate}%
             </p>
@@ -223,16 +225,16 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             </span>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Filter, Generator & Search Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2.5">
+      {/* Filter, Generator & Pencarian */}
+      <div className="flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={selectedMonth}
             onChange={(e) => onChangeMonth(e.target.value)}
             aria-label="Pilih Periode Bulan"
-            className="px-3.5 py-2 rounded-lg input-surface border text-sm font-medium"
+            className="px-3 py-2 rounded-lg input-surface border text-xs sm:text-sm font-medium"
           >
             {monthOptions.map((m) => (
               <option key={m} value={m}>
@@ -264,62 +266,64 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
               setGenerateMonth(getNextMonthISO(selectedMonth));
               setShowGenerator((v) => !v);
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg surface-card border border-slate-200/90 dark:border-white/[0.12] text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition-colors whitespace-nowrap"
+            className="min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
           >
-            <CalendarPlus className="w-3.5 h-3.5" />
-            <span>Buat Tagihan Bulanan</span>
+            <CalendarPlus className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Buat Tagihan</span>
           </button>
 
           <button
             type="button"
             onClick={onOpenReceiptFormat}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg surface-card border border-slate-200/90 dark:border-white/[0.12] text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition-colors whitespace-nowrap"
+            className="min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
           >
-            <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden="true" />
             <span>
-              Format Kwitansi PDF{receiptTemplate.autoGeneratePdfOnPaid ? ' (Auto)' : ''}
+              Format Kwitansi{receiptTemplate.autoGeneratePdfOnPaid ? ' (Auto)' : ''}
             </span>
           </button>
         </div>
 
-        <div className="relative w-full lg:w-64">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <div className="relative w-full sm:w-60">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari nama, kamar, no. invoice..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg input-surface border text-sm placeholder:text-slate-400"
+            placeholder="Cari nama, kamar, invoice..."
+            aria-label="Cari pembayaran"
+            className="w-full pl-9 pr-3 py-2 rounded-lg input-surface border text-xs sm:text-sm placeholder:text-slate-400"
           />
         </div>
       </div>
 
-      {/* Monthly Bill Generator Panel */}
+      {/* Generator Tagihan Bulanan */}
       {showGenerator && (
         <form
           onSubmit={handleGenerateSubmit}
-          className="p-4 sm:p-5 rounded-xl surface-card border border-teal-600/30 dark:border-teal-400/30 flex flex-wrap items-center justify-between gap-4"
+          className="p-4 rounded-xl surface-card border border-teal-600/30 dark:border-teal-400/30 flex flex-wrap items-center justify-between gap-4"
         >
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             <p className="font-display font-semibold text-sm text-slate-900 dark:text-white">
-              Generate Tagihan Otomatis untuk Seluruh Kamar Terisi
+              Buat Tagihan Otomatis untuk Kamar Terisi
             </p>
             <p className="text-xs text-slate-600 dark:text-slate-300">
               {missingForGenerateMonth > 0
-                ? `Akan membuat ${missingForGenerateMonth} tagihan baru (status Belum Bayar) untuk periode ${formatMonthYear(
+                ? `Akan membuat ${missingForGenerateMonth} tagihan baru periode ${formatMonthYear(
                     generateMonth
                   )}.`
-                : `Semua kamar terisi sudah memiliki tagihan untuk periode ${formatMonthYear(
+                : `Semua kamar terisi sudah memiliki tagihan periode ${formatMonthYear(
                     generateMonth
                   )}.`}
             </p>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <input
               type="month"
               required
               value={generateMonth}
               onChange={(e) => setGenerateMonth(e.target.value)}
+              aria-label="Pilih bulan tagihan baru"
               className="px-3 py-2 rounded-lg input-surface border font-mono-num text-xs"
             />
             <button
@@ -335,17 +339,17 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
               className="p-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               aria-label="Tutup generator tagihan"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </form>
       )}
 
-      {/* Ledger Table */}
+      {/* Tabel Tagihan */}
       <div className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-200/80 dark:border-white/[0.07] flex items-center justify-between">
+        <div className="px-5 py-3.5 border-b border-slate-200/80 dark:border-white/[0.07] flex items-center justify-between">
           <h2 className="font-display font-semibold text-sm sm:text-base text-slate-900 dark:text-white">
-            Pembayaran Sewa — {formatMonthYear(selectedMonth)}
+            Pembayaran Sewa · {formatMonthYear(selectedMonth)}
           </h2>
           <span className="font-mono-num text-xs text-slate-500 dark:text-slate-400">
             {filtered.length} baris
@@ -353,13 +357,12 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
         </div>
 
         {filtered.length === 0 ? (
-          <div className="p-12 text-center space-y-3">
-            <ReceiptText className="w-8 h-8 text-teal-600 dark:text-teal-400 mx-auto" />
+          <div className="p-8 text-center space-y-2.5">
             <p className="font-display font-medium text-slate-900 dark:text-white">
-              Tidak ada data pembayaran ditemukan
+              Tidak ada data pembayaran untuk filter ini
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Catat pembayaran baru atau buat tagihan bulanan otomatis di atas.
+              Catat pembayaran baru atau buat tagihan bulanan otomatis.
             </p>
             <button
               type="button"
@@ -374,13 +377,13 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200/80 dark:border-white/[0.08] text-xs font-medium text-slate-500 dark:text-slate-400">
-                  <th className="py-3.5 px-5">Penyewa</th>
-                  <th className="py-3.5 px-4">Kamar</th>
-                  <th className="py-3.5 px-4 text-right">Total Tagihan</th>
-                  <th className="py-3.5 px-4">Tanggal / Tempo</th>
-                  <th className="py-3.5 px-4">Metode</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-5 text-right">Aksi</th>
+                  <th className="py-3 px-5">Penyewa</th>
+                  <th className="py-3 px-4">Kamar</th>
+                  <th className="py-3 px-4 text-right">Total Tagihan</th>
+                  <th className="py-3 px-4">Tanggal / Tempo</th>
+                  <th className="py-3 px-4">Metode</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-5 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/70 dark:divide-white/[0.06] text-sm">
@@ -423,7 +426,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                   return (
                     <React.Fragment key={pay.id}>
                       <tr className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3.5 px-5">
+                        <td className="py-3 px-5">
                           <p className="font-medium text-slate-900 dark:text-white">
                             {pay.tenantName}
                           </p>
@@ -431,10 +434,10 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                             {pay.invoiceNo}
                           </p>
                         </td>
-                        <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-200">
+                        <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-200">
                           {roomObj ? getRoomDisplayName(roomObj) : `Kamar ${pay.roomNumber}`}
                         </td>
-                        <td className="py-3.5 px-4 text-right font-mono-num">
+                        <td className="py-3 px-4 text-right font-mono-num">
                           <p className="font-medium text-slate-900 dark:text-white">
                             {formatIDR(grandTotal)}
                           </p>
@@ -444,7 +447,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                             </p>
                           )}
                         </td>
-                        <td className="py-3.5 px-4 font-mono-num text-xs">
+                        <td className="py-3 px-4 font-mono-num text-xs">
                           {isPaid ? (
                             <span className="text-slate-600 dark:text-slate-300">
                               {formatDateID(pay.paidDate)}
@@ -463,20 +466,18 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                             </span>
                           )}
                         </td>
-                        <td className="py-3.5 px-4 text-xs text-slate-500 dark:text-slate-400">
-                          {pay.method ?? linkRecord?.confirmationMethod ?? '—'}
+                        <td className="py-3 px-4 text-xs text-slate-500 dark:text-slate-400">
+                          {pay.method ?? linkRecord?.confirmationMethod ?? '-'}
                         </td>
-                        <td className="py-3.5 px-4">
+                        <td className="py-3 px-4">
                           {isPaid ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Lunas</span>
+                            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                              Lunas
                             </span>
                           ) : isPendingVerify ? (
                             <div>
-                              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-300">
-                                <Clock3 className="w-3.5 h-3.5" />
-                                <span>Menunggu Verifikasi</span>
+                              <span className="text-xs font-medium text-amber-600 dark:text-amber-300">
+                                Menunggu Verifikasi
                               </span>
                               {linkRecord?.confirmationNote && (
                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[160px]">
@@ -485,30 +486,29 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                               )}
                             </div>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400">
-                              <Clock3 className="w-3.5 h-3.5" />
-                              <span>Belum Bayar</span>
+                            <span className="text-xs font-medium text-rose-600 dark:text-rose-400">
+                              Belum Bayar
                             </span>
                           )}
                         </td>
-                        <td className="py-3.5 px-5 text-right">
+                        <td className="py-3 px-5 text-right">
                           {isPaid ? (
                             <div className="inline-flex items-center gap-1.5">
                               <button
                                 type="button"
                                 onClick={() => onDownloadPdfReceipt(pay)}
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.08] text-teal-700 dark:text-teal-300 transition-colors"
+                                className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary text-teal-700 dark:text-teal-300"
                                 title="Unduh Kwitansi PDF"
                                 aria-label={`Unduh PDF ${pay.invoiceNo}`}
                               >
-                                <Download className="w-3.5 h-3.5" />
+                                <Download className="w-3.5 h-3.5" aria-hidden="true" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => onOpenReceipt(pay)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.08] text-xs font-medium text-slate-700 dark:text-slate-200 transition-colors whitespace-nowrap"
+                                className="min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
                               >
-                                <ReceiptText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                                <ReceiptText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden="true" />
                                 <span>Kwitansi</span>
                               </button>
                             </div>
@@ -521,15 +521,16 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                                     ? setEditingPaymentId(null)
                                     : startEditPayment(pay)
                                 }
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+                                className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary"
                                 title="Atur denda / nominal tagihan"
+                                aria-label={`Ubah nominal ${pay.tenantName}`}
                               >
-                                <Pencil className="w-3.5 h-3.5" />
+                                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                               </button>
                               <button
                                 type="button"
                                 onClick={() => onCreateAndCopyPaymentLink(pay, roomObj)}
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-teal-700 dark:text-teal-300 hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-colors"
+                                className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary text-teal-700 dark:text-teal-300"
                                 title={
                                   pay.paymentLinkId
                                     ? 'Salin Link Pembayaran Bank/QRIS'
@@ -537,7 +538,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                                 }
                                 aria-label="Salin Link Pembayaran"
                               >
-                                <Link2 className="w-3.5 h-3.5" />
+                                <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
                               </button>
                               {roomObj && (
                                 <>
@@ -546,22 +547,22 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                                     onClick={() =>
                                       onCopyReminder(roomObj, grandTotal, pay)
                                     }
-                                    className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
+                                    className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary"
                                     title="Salin pesan pengingat WA"
                                     aria-label="Salin pengingat WA"
                                   >
-                                    <Copy className="w-3.5 h-3.5" />
+                                    <Copy className="w-3.5 h-3.5" aria-hidden="true" />
                                   </button>
                                   {roomObj.tenant && (
                                     <a
                                       href={waUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="p-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-teal-700 dark:text-teal-300 hover:bg-slate-50 dark:hover:bg-white/[0.06] transition-colors"
+                                      className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary text-teal-700 dark:text-teal-300"
                                       title="Buka & kirim langsung ke WhatsApp penyewa"
                                       aria-label={`Kirim WA ke ${pay.tenantName}`}
                                     >
-                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                                     </a>
                                   )}
                                 </>
@@ -569,7 +570,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onMarkPaid(pay.id)}
-                                className="px-3 py-1.5 rounded-lg btn-primary text-xs font-medium transition-colors whitespace-nowrap"
+                                className="min-h-[36px] px-3.5 py-1.5 rounded-xl btn-primary text-xs font-medium whitespace-nowrap"
                               >
                                 {isPendingVerify ? 'Verifikasi & PDF' : 'Tandai Lunas'}
                               </button>
@@ -632,7 +633,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                                   onClick={() => handleSavePaymentEdit(pay.id)}
                                   className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg btn-primary text-xs font-medium"
                                 >
-                                  <Save className="w-3.5 h-3.5" />
+                                  <Save className="w-3.5 h-3.5" aria-hidden="true" />
                                   <span>{savingEdit ? 'Menyimpan...' : 'Simpan'}</span>
                                 </button>
                               </div>

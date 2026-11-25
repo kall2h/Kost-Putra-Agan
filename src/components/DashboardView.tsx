@@ -1,16 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ArrowUpRight,
   Building2,
-  CheckCircle2,
   ChevronRight,
   Copy,
   ExternalLink,
-  MapPin,
   Pencil,
-  Wifi,
-  ShieldCheck,
-  Wrench,
   X,
 } from 'lucide-react';
 import {
@@ -172,7 +166,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               : payStatus ?? 'Terisi'}
           </span>
         </div>
-        <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate mt-2">
+        <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate mt-1.5">
           {room.tenant
             ? room.tenant.name
             : isMaintenance
@@ -188,36 +182,39 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   };
 
   return (
-    <div className="space-y-5">
-      {/* Property Header Banner (Gambar Kost Putra Agan & Alamat) */}
+    <div className="space-y-4">
+      {/* Header Properti */}
       <section
         aria-label="Informasi Properti"
         className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-hidden"
       >
         <div className="flex flex-col md:flex-row">
-          <div className="relative h-44 md:h-auto md:min-h-[160px] md:w-72 lg:w-80 shrink-0 bg-slate-900 overflow-hidden">
+          <div className="relative h-40 md:h-auto md:w-64 lg:w-72 shrink-0 bg-slate-900 overflow-hidden">
             {!heroImgError ? (
               <img
                 src={PROPERTY_EXTERIOR_IMG}
                 alt={`Tampak depan gedung ${settings.name}`}
+                width={640}
+                height={420}
+                fetchPriority="high"
                 referrerPolicy="no-referrer"
                 onError={() => setHeroImgError(true)}
                 className="md:absolute md:inset-0 w-full h-full object-cover"
               />
             ) : (
-              <div className="md:absolute md:inset-0 w-full h-full flex flex-col items-center justify-center bg-teal-900 text-teal-100 p-6">
-                <Building2 className="w-9 h-9 mb-1.5" />
+              <div className="md:absolute md:inset-0 w-full h-full flex flex-col items-center justify-center bg-teal-900 text-teal-100 p-5">
+                <Building2 className="w-8 h-8 mb-1.5" aria-hidden="true" />
                 <p className="text-sm font-medium text-white text-center">{settings.name}</p>
               </div>
             )}
           </div>
 
-          <div className="flex-1 p-5 sm:p-6 flex flex-col justify-between gap-4">
+          <div className="flex-1 p-4 sm:p-5 flex flex-col justify-center gap-3">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h1 className="font-display font-semibold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
+                <h2 className="font-display font-semibold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
                   {settings.name}
-                </h1>
+                </h2>
                 <p className="text-xs sm:text-sm text-teal-700 dark:text-teal-300 font-medium mt-0.5">
                   {settings.tagline}
                 </p>
@@ -226,57 +223,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 type="button"
                 onClick={() => onNavigate('settings')}
-                className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors whitespace-nowrap"
+                className="min-h-[38px] px-3.5 py-2 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
               >
-                <span>Edit Profil Properti</span>
-                <ArrowUpRight className="w-3.5 h-3.5" />
+                Edit Profil
               </button>
             </div>
 
-            <div className="space-y-2.5 pt-3 border-t border-slate-200/70 dark:border-white/[0.07] text-xs text-slate-600 dark:text-slate-300">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
-                <span className="leading-relaxed">{settings.address}</span>
-              </div>
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-slate-500 dark:text-slate-400">
-                <span className="inline-flex items-center gap-1.5">
-                  <Wifi className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                  <span>WiFi 100 Mbps</span>
+            <div className="pt-3 border-t border-slate-200/70 dark:border-white/[0.07] space-y-1 text-xs text-slate-600 dark:text-slate-300">
+              <p className="leading-relaxed">{settings.address}</p>
+              <p className="text-slate-500 dark:text-slate-400">
+                WiFi 100 Mbps · CCTV &amp; Akses 24 Jam ·{' '}
+                <span className="font-mono-num font-medium text-slate-700 dark:text-slate-200">
+                  {rooms.length} Unit Kamar
                 </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                  <span>CCTV &amp; Akses 24 Jam</span>
-                </span>
-                <span className="font-mono-num text-slate-600 dark:text-slate-300">
-                  Total {rooms.length} Unit Kamar
-                </span>
-              </div>
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Executive KPI Strip (4 Panel di Bawah Header) */}
+      {/* Ringkasan Metrik Utama (1 Panel Terpadu Tanpa Jarak Kosong) */}
       <section
         aria-label="Ringkasan Metrik Utama"
-        className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"
+        className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-slate-200/80 dark:divide-white/[0.07]"
       >
-        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
+        <div className="p-4 sm:p-5">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Okupansi Properti</span>
             <button
               type="button"
               onClick={() => onNavigate('rooms')}
-              className="text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 inline-flex items-center gap-0.5 font-medium transition-colors"
+              className="text-teal-700 dark:text-teal-300 hover:underline font-medium"
             >
-              <span>Unit</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              Kelola Unit
             </button>
           </div>
-          <p className="font-mono-num text-2xl sm:text-[28px] font-semibold text-slate-900 dark:text-white mt-2">
+          <p className="font-mono-num text-2xl font-semibold text-slate-900 dark:text-white mt-1.5">
             {occupancyPct}%
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             <span className="font-mono-num text-slate-800 dark:text-slate-200 font-medium">
               {occupiedRooms.length}
             </span>{' '}
@@ -288,22 +273,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
 
-        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
+        <div className="p-4 sm:p-5">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Pemasukan ({formatMonthYear(activeMonth)})</span>
             <button
               type="button"
               onClick={() => onNavigate('payments')}
-              className="text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 inline-flex items-center gap-0.5 font-medium transition-colors"
+              className="text-teal-700 dark:text-teal-300 hover:underline font-medium"
             >
-              <span>Tagihan</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              Tagihan
             </button>
           </div>
-          <p className="font-mono-num text-2xl sm:text-[26px] font-semibold text-slate-900 dark:text-white mt-2">
+          <p className="font-mono-num text-2xl font-semibold text-slate-900 dark:text-white mt-1.5">
             {formatIDR(totalIncomeMonth)}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             <span className="font-mono-num text-emerald-700 dark:text-emerald-400 font-medium">
               {paidMonth.length}
             </span>{' '}
@@ -311,22 +295,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
 
-        <div className="p-5 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08]">
+        <div className="p-4 sm:p-5">
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Tagihan Belum Bayar</span>
+            <span>Belum Dibayar</span>
             <button
               type="button"
               onClick={() => onNavigate('payments')}
-              className="text-slate-600 dark:text-slate-300 hover:text-teal-700 dark:hover:text-teal-300 inline-flex items-center gap-0.5 font-medium transition-colors"
+              className="text-teal-700 dark:text-teal-300 hover:underline font-medium"
             >
-              <span>Lihat</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              Lihat Daftar
             </button>
           </div>
-          <p className="font-mono-num text-2xl sm:text-[26px] font-semibold text-rose-600 dark:text-rose-400 mt-2">
+          <p className="font-mono-num text-2xl font-semibold text-rose-600 dark:text-rose-400 mt-1.5">
             {formatIDR(totalUnpaidMonth)}
           </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             <span className="font-mono-num font-medium text-slate-800 dark:text-slate-200">
               {unpaidMonth.length} kamar
             </span>{' '}
@@ -334,49 +317,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </p>
         </div>
 
-        {/* Signature Calm Gradient Focal KPI */}
-        <div className="p-5 rounded-xl gradient-hero-card border border-teal-800/20">
-          <div className="flex items-center justify-between text-xs text-teal-100">
+        <div className="p-4 sm:p-5 focal-surface">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Laba Bersih ({formatMonthYear(activeMonth)})</span>
             <button
               type="button"
               onClick={() => onNavigate('finance')}
-              className="text-white/90 hover:text-white inline-flex items-center gap-0.5 font-medium transition-colors"
+              className="text-teal-700 dark:text-teal-300 hover:underline font-medium"
             >
-              <span>Arus Kas</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              Arus Kas
             </button>
           </div>
-          <p className="font-mono-num text-2xl sm:text-[26px] font-semibold text-white mt-2">
+          <p className="font-mono-num text-2xl font-semibold text-teal-800 dark:text-teal-300 mt-1.5">
             {formatIDR(netProfitMonth)}
           </p>
-          <p className="text-xs text-teal-100/90 mt-1.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Margin operasional{' '}
-            <span className="font-mono-num font-semibold text-white">
+            <span className="font-mono-num font-semibold text-slate-800 dark:text-slate-200">
               {marginPct}%
             </span>
           </p>
         </div>
       </section>
 
-      {/* Panel Tipe & Unit Kamar: 1 Panel Terpadu 3 Kolom Sejajar (Tipe A | Tipe B | Tipe C) */}
+      {/* Panel Tipe & Unit Kamar */}
       <section className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-hidden">
-        <div className="px-5 sm:px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.07] flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
-              Panel Tipe &amp; Unit Kamar
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Klik salah satu tipe kamar untuk melihat rincian fasilitas, foto, dan daftar unit kamar
-            </p>
-          </div>
+        <div className="px-5 py-3.5 border-b border-slate-200/80 dark:border-white/[0.07] flex items-center justify-between gap-2">
+          <h3 className="font-display font-semibold text-sm sm:text-base text-slate-900 dark:text-white">
+            Tipe &amp; Daftar Kamar
+          </h3>
           <button
             type="button"
             onClick={() => onNavigate('rooms')}
-            className="text-xs font-medium text-teal-700 dark:text-teal-300 hover:text-teal-600 dark:hover:text-teal-200 inline-flex items-center gap-1 whitespace-nowrap transition-colors"
+            className="text-xs font-medium text-teal-700 dark:text-teal-300 hover:underline whitespace-nowrap"
           >
-            <span>Semua Kamar</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
+            Semua Kamar
           </button>
         </div>
 
@@ -392,20 +367,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 key={rt.id}
                 type="button"
                 onClick={() => setSelectedTypeId(rt.id)}
-                className="w-full p-4 sm:p-5 flex items-center justify-between gap-3 text-left group hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors"
+                className="w-full p-4 flex items-center justify-between gap-3 text-left group hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <img
                     src={coverUrl}
                     alt={panelName}
+                    width={48}
+                    height={44}
                     referrerPolicy="no-referrer"
                     className="w-12 h-11 rounded-lg object-cover border border-slate-200/80 dark:border-white/[0.08] shrink-0 bg-slate-100 dark:bg-slate-800"
                   />
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <h3 className="font-display font-semibold text-sm text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors truncate">
+                      <span className="font-display font-semibold text-sm text-slate-900 dark:text-white group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors truncate">
                         {panelName}
-                      </h3>
+                      </span>
                       <span className="text-xs text-slate-300 dark:text-slate-600">·</span>
                       <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
                         {rt.subtitle}
@@ -420,146 +397,146 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                 </div>
 
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-teal-700 dark:group-hover:text-teal-300 group-hover:translate-x-0.5 shrink-0 transition-all" />
+                <ChevronRight
+                  className="w-4 h-4 text-slate-400 group-hover:text-teal-700 dark:group-hover:text-teal-300 shrink-0 transition-colors"
+                  aria-hidden="true"
+                />
               </button>
             );
           })}
         </div>
       </section>
 
-      {/* Baris Bawah Sejajar: Perlu Tindak Lanjut & Tren Arus Kas (Equal Height) */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
-        <section className="xl:col-span-6 h-full rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between gap-4">
-          <div className="space-y-4 flex-1 flex flex-col">
-            <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
-              <div>
-                <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
-                  Perlu Tindak Lanjut
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Tagihan sewa {formatMonthYear(activeMonth)} yang belum lunas
-                </p>
-              </div>
-              <span className="font-mono-num text-xs font-semibold text-rose-600 dark:text-rose-400">
-                {unpaidMonth.length} Tagihan
-              </span>
+      {/* Baris Bawah: Perlu Tindak Lanjut & Tren Arus Kas (Tanpa Ruang Kosong Tengah) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+        <section className="xl:col-span-6 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
+            <div>
+              <h3 className="font-display font-semibold text-sm sm:text-base text-slate-900 dark:text-white">
+                Perlu Tindak Lanjut
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Tagihan {formatMonthYear(activeMonth)} yang belum lunas
+              </p>
             </div>
-
-            {unpaidMonth.length === 0 ? (
-              <div className="flex-1 py-6 flex flex-col items-center justify-center text-center space-y-2">
-                <CheckCircle2 className="w-8 h-8 text-teal-600 dark:text-teal-400 mx-auto" />
-                <p className="text-sm font-medium text-slate-900 dark:text-white">
-                  Seluruh Tagihan {formatMonthYear(activeMonth)} Lunas
-                </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Kolektibilitas bulan ini mencapai 100%.
-                </p>
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-200/70 dark:divide-white/[0.06]">
-                {unpaidMonth.map((pay) => {
-                  const roomObj = rooms.find((r) => r.number === pay.roomNumber);
-                  const total = pay.amount + (pay.lateFee ?? 0);
-                  const dueDay = roomObj?.tenant?.dueDay ?? settings.defaultDueDay;
-                  const dueInfo = getDueStatusInfo(pay.month, dueDay);
-
-                  const tpl =
-                    dueInfo.tone === 'overdue'
-                      ? activeTemplates.find((t) => t.category === 'tunggakan') ??
-                        activeTemplates[0]
-                      : activeTemplates.find((t) => t.category === 'tagihan') ??
-                        activeTemplates[0];
-                  const waText = roomObj
-                    ? renderMessageTemplate(tpl.body, {
-                        settings,
-                        room: roomObj,
-                        payment: pay,
-                        month: pay.month,
-                      })
-                    : '';
-                  const waUrl = roomObj?.tenant
-                    ? buildWhatsAppUrl(roomObj.tenant.phone, waText)
-                    : '#';
-
-                  return (
-                    <div
-                      key={pay.id}
-                      className="py-3 first:pt-0.5 last:pb-0.5 flex flex-wrap items-center justify-between gap-3"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono-num text-xs font-semibold text-teal-700 dark:text-teal-300">
-                            {roomObj ? getRoomDisplayName(roomObj) : `Kamar ${pay.roomNumber}`}
-                          </span>
-                          <span className="text-slate-300 dark:text-slate-600">·</span>
-                          <span className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                            {pay.tenantName}
-                          </span>
-                        </div>
-                        <p className="font-mono-num text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          {formatIDR(total)} ·{' '}
-                          <span
-                            className={
-                              dueInfo.tone === 'overdue'
-                                ? 'text-rose-600 dark:text-rose-400 font-medium'
-                                : dueInfo.tone === 'due_soon'
-                                ? 'text-amber-600 dark:text-amber-300 font-medium'
-                                : ''
-                            }
-                          >
-                            {dueInfo.label}
-                          </span>
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {roomObj && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => onCopyReminder(roomObj, total, pay)}
-                              className="p-2 rounded-lg border border-slate-200 dark:border-white/[0.12] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-white/[0.05] transition-colors"
-                              title="Salin pesan pengingat WhatsApp"
-                              aria-label={`Salin pengingat WhatsApp untuk ${pay.tenantName}`}
-                            >
-                              <Copy className="w-3.5 h-3.5" />
-                            </button>
-                            {roomObj.tenant && (
-                              <a
-                                href={waUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-2 rounded-lg border border-slate-200 dark:border-white/[0.12] text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-teal-500/10 transition-colors"
-                                title="Kirim langsung via WhatsApp"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                          </>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => onMarkPaid(pay.id)}
-                          className="px-3 py-1.5 rounded-lg btn-primary text-xs font-medium transition-colors whitespace-nowrap"
-                        >
-                          Tandai Lunas
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            <span className="font-mono-num text-xs font-semibold text-rose-600 dark:text-rose-400">
+              {unpaidMonth.length} Tagihan
+            </span>
           </div>
 
+          {unpaidMonth.length === 0 ? (
+            <div className="py-4 text-center space-y-1">
+              <p className="text-sm font-medium text-slate-900 dark:text-white">
+                Semua tagihan {formatMonthYear(activeMonth)} sudah lunas
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Tidak ada tunggakan aktif bulan ini.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-200/70 dark:divide-white/[0.06]">
+              {unpaidMonth.map((pay) => {
+                const roomObj = rooms.find((r) => r.number === pay.roomNumber);
+                const total = pay.amount + (pay.lateFee ?? 0);
+                const dueDay = roomObj?.tenant?.dueDay ?? settings.defaultDueDay;
+                const dueInfo = getDueStatusInfo(pay.month, dueDay);
+
+                const tpl =
+                  dueInfo.tone === 'overdue'
+                    ? activeTemplates.find((t) => t.category === 'tunggakan') ??
+                      activeTemplates[0]
+                    : activeTemplates.find((t) => t.category === 'tagihan') ??
+                      activeTemplates[0];
+                const waText = roomObj
+                  ? renderMessageTemplate(tpl.body, {
+                      settings,
+                      room: roomObj,
+                      payment: pay,
+                      month: pay.month,
+                    })
+                  : '';
+                const waUrl = roomObj?.tenant
+                  ? buildWhatsAppUrl(roomObj.tenant.phone, waText)
+                  : '#';
+
+                return (
+                  <div
+                    key={pay.id}
+                    className="py-2.5 first:pt-0 last:pb-0 flex flex-wrap items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono-num text-xs font-semibold text-teal-700 dark:text-teal-300">
+                          {roomObj ? getRoomDisplayName(roomObj) : `Kamar ${pay.roomNumber}`}
+                        </span>
+                        <span className="text-slate-300 dark:text-slate-600">·</span>
+                        <span className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                          {pay.tenantName}
+                        </span>
+                      </div>
+                      <p className="font-mono-num text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        {formatIDR(total)} ·{' '}
+                        <span
+                          className={
+                            dueInfo.tone === 'overdue'
+                              ? 'text-rose-600 dark:text-rose-400 font-medium'
+                              : dueInfo.tone === 'due_soon'
+                              ? 'text-amber-600 dark:text-amber-300 font-medium'
+                              : ''
+                          }
+                        >
+                          {dueInfo.label}
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {roomObj && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => onCopyReminder(roomObj, total, pay)}
+                            className="min-w-[38px] min-h-[38px] inline-flex items-center justify-center rounded-xl btn-secondary"
+                            title="Salin pesan pengingat WhatsApp"
+                            aria-label={`Salin pengingat WhatsApp untuk ${pay.tenantName}`}
+                          >
+                            <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                          </button>
+                          {roomObj.tenant && (
+                            <a
+                              href={waUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="min-w-[38px] min-h-[38px] inline-flex items-center justify-center rounded-xl btn-secondary text-teal-700 dark:text-teal-300"
+                              title="Kirim langsung via WhatsApp"
+                              aria-label={`Kirim WhatsApp ke ${pay.tenantName}`}
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                            </a>
+                          )}
+                        </>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onMarkPaid(pay.id)}
+                        className="min-h-[38px] px-3.5 py-2 rounded-xl btn-primary text-xs font-medium whitespace-nowrap"
+                      >
+                        Tandai Lunas
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {(openMaintenance.length > 0 || availableRooms.length > 0) && (
-            <div className="space-y-3 pt-3 border-t border-slate-200/80 dark:border-white/[0.07]">
+            <div className="space-y-3 pt-3.5 border-t border-slate-200/80 dark:border-white/[0.07]">
               {openMaintenance.length > 0 && (
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="inline-flex items-center gap-1.5 font-medium text-amber-700 dark:text-amber-300">
-                      <Wrench className="w-3.5 h-3.5" />
-                      <span>Perawatan Aktif ({openMaintenance.length})</span>
+                    <span className="font-medium text-amber-700 dark:text-amber-300">
+                      Perawatan Aktif ({openMaintenance.length})
                     </span>
                     <button
                       type="button"
@@ -569,16 +546,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       Kelola Unit
                     </button>
                   </div>
-                  <div className="space-y-1">
-                    {openMaintenance.slice(0, 2).map((m) => (
-                      <p
-                        key={m.id}
-                        className="text-xs text-slate-600 dark:text-slate-300 truncate"
-                      >
-                        • Kamar {m.roomNumber}: {m.title} ({m.status})
-                      </p>
-                    ))}
-                  </div>
+                  {openMaintenance.slice(0, 2).map((m) => (
+                    <p
+                      key={m.id}
+                      className="text-xs text-slate-600 dark:text-slate-300 truncate"
+                    >
+                      Kamar {m.roomNumber}: {m.title} ({m.status})
+                    </p>
+                  ))}
                 </div>
               )}
 
@@ -592,16 +567,17 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 >
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
-                      Kamar Tersedia: {availableRooms.map((r) => getRoomDisplayName(r)).join(', ')}
+                      Kamar Tersedia:{' '}
+                      {availableRooms.map((r) => getRoomDisplayName(r)).join(', ')}
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Siap untuk ditempati penyewa baru
+                      Siap ditempati penyewa baru
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => onOpenCheckIn(availableRooms[0].number)}
-                    className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] text-teal-700 dark:text-teal-300 hover:border-teal-600 text-xs font-medium whitespace-nowrap shrink-0 transition-colors"
+                    className="min-h-[38px] px-3.5 py-2 rounded-xl btn-secondary text-teal-700 dark:text-teal-300 text-xs font-medium whitespace-nowrap shrink-0"
                   >
                     Check-In
                   </button>
@@ -611,33 +587,30 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </section>
 
-        <section className="xl:col-span-6 h-full rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between gap-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
+        <section className="xl:col-span-6 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 space-y-3">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
             <div>
-              <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
+              <h3 className="font-display font-semibold text-sm sm:text-base text-slate-900 dark:text-white">
                 Tren Arus Kas 6 Bulan Terakhir
-              </h2>
+              </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Perbandingan realisasi pemasukan sewa terhadap beban operasional
+                Pemasukan sewa dibandingkan pengeluaran operasional
               </p>
             </div>
             <button
               type="button"
               onClick={() => onNavigate('finance')}
-              className="text-xs font-medium text-teal-700 dark:text-teal-300 hover:text-teal-600 dark:hover:text-teal-200 inline-flex items-center gap-1 whitespace-nowrap transition-colors"
+              className="text-xs font-medium text-teal-700 dark:text-teal-300 hover:underline whitespace-nowrap"
             >
-              <span>Buka Rincian</span>
-              <ArrowUpRight className="w-3.5 h-3.5" />
+              Buka Rincian
             </button>
           </div>
 
-          <div className="my-auto">
-            <CashflowTrendChart
-              data={cashflowHistory}
-              height={220}
-              activeMonth={activeMonth}
-            />
-          </div>
+          <CashflowTrendChart
+            data={cashflowHistory}
+            height={190}
+            activeMonth={activeMonth}
+          />
         </section>
       </div>
 
@@ -654,7 +627,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         return (
           <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
             <div
-              className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
+              className="fixed inset-0 bg-slate-950/50 animate-backdrop-in"
               onClick={() => setSelectedTypeId(null)}
               aria-hidden="true"
             />
@@ -664,7 +637,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               aria-label={`Informasi ${panelName}`}
               className="relative z-10 w-full max-w-3xl max-h-[88vh] rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl flex flex-col overflow-hidden animate-modal-in"
             >
-              {/* Pop-up Header */}
               <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -688,9 +660,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   <button
                     type="button"
                     onClick={() => onEditRoomType(activeModalType)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:border-teal-600 hover:text-teal-700 dark:hover:text-teal-300 text-xs font-medium transition-colors whitespace-nowrap"
+                    className="min-h-[38px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
                   >
-                    <Pencil className="w-3.5 h-3.5" />
+                    <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
                     <span>Edit Panel</span>
                   </button>
                   <button
@@ -699,13 +671,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
                     aria-label="Tutup pop-up tipe kamar"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-5 h-5" aria-hidden="true" />
                   </button>
                 </div>
               </div>
 
-              {/* Pop-up Body */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              <div className="flex-1 overflow-y-auto p-6 space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
                   <div className="md:col-span-6">
                     <RoomPhotoSlider
@@ -716,7 +687,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                   <div className="md:col-span-6 space-y-3">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
                         Deskripsi Tipe Kamar
                       </p>
                       <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -724,8 +695,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                       </p>
                     </div>
                     {activeModalType.facilities.length > 0 && (
-                      <div className="pt-2 border-t border-slate-200/70 dark:border-white/[0.07]">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+                      <div className="pt-2.5 border-t border-slate-200/70 dark:border-white/[0.07]">
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">
                           Fasilitas Standar
                         </p>
                         <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -736,17 +707,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </div>
                 </div>
 
-                {/* Daftar Unit Kamar di Tipe Ini */}
-                <div className="pt-5 border-t border-slate-200/80 dark:border-white/[0.08] space-y-3.5">
+                <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <h3 className="font-display font-semibold text-sm text-slate-900 dark:text-white">
-                        Daftar Unit Kamar ({typeRooms.length})
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Klik unit kamar untuk lihat detail penyewa, kwitansi, atau tindak lanjut tagihan
-                      </p>
-                    </div>
+                    <h3 className="font-display font-semibold text-sm text-slate-900 dark:text-white">
+                      Daftar Unit Kamar ({typeRooms.length})
+                    </h3>
                     <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                       <span className="text-emerald-700 dark:text-emerald-400 font-medium">
                         Lunas

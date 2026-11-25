@@ -151,7 +151,7 @@ export const RoomPhotoSlider: React.FC<RoomPhotoSliderProps> = ({
         {(hasMultiple || enableLightbox) && (
           <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
             {hasMultiple && (
-              <span className="px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-[11px] font-mono-num font-medium text-white">
+              <span className="px-2 py-0.5 rounded-md bg-slate-950/75 text-[11px] font-mono-num font-medium text-white">
                 {activeIndex + 1}/{safeImages.length}
               </span>
             )}
@@ -162,11 +162,11 @@ export const RoomPhotoSlider: React.FC<RoomPhotoSliderProps> = ({
                   e.stopPropagation();
                   setLightboxOpen(true);
                 }}
-                className="p-1.5 rounded-md bg-black/55 hover:bg-black/75 backdrop-blur-xs text-white transition-colors"
+                className="p-1.5 rounded-md bg-slate-950/75 hover:bg-slate-950/90 text-white"
                 title="Lihat galeri layar penuh"
                 aria-label="Perbesar galeri foto"
               >
-                <Expand className="w-3.5 h-3.5" />
+                <Expand className="w-3.5 h-3.5" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -190,12 +190,12 @@ export const RoomPhotoSlider: React.FC<RoomPhotoSliderProps> = ({
                 e.stopPropagation();
                 scrollToSlide(activeIndex - 1);
               }}
-              className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/55 hover:bg-black/80 text-white backdrop-blur-xs transition-all flex items-center justify-center ${
+              className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-slate-950/75 hover:bg-slate-950/90 text-white flex items-center justify-center ${
                 compactControls ? 'w-7 h-7' : 'w-8 h-8'
               }`}
               aria-label="Foto sebelumnya"
             >
-              <ChevronLeft className={compactControls ? 'w-4 h-4' : 'w-4.5 h-4.5'} />
+              <ChevronLeft className={compactControls ? 'w-4 h-4' : 'w-4.5 h-4.5'} aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -203,12 +203,12 @@ export const RoomPhotoSlider: React.FC<RoomPhotoSliderProps> = ({
                 e.stopPropagation();
                 scrollToSlide(activeIndex + 1);
               }}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-black/55 hover:bg-black/80 text-white backdrop-blur-xs transition-all flex items-center justify-center ${
+              className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 rounded-full bg-slate-950/75 hover:bg-slate-950/90 text-white flex items-center justify-center ${
                 compactControls ? 'w-7 h-7' : 'w-8 h-8'
               }`}
               aria-label="Foto berikutnya"
             >
-              <ChevronRight className={compactControls ? 'w-4 h-4' : 'w-4.5 h-4.5'} />
+              <ChevronRight className={compactControls ? 'w-4 h-4' : 'w-4.5 h-4.5'} aria-hidden="true" />
             </button>
 
             {/* Bottom Dot Indicators */}
@@ -241,7 +241,7 @@ export const RoomPhotoSlider: React.FC<RoomPhotoSliderProps> = ({
       {/* Google-Review-Style Fullscreen Photo Slider Modal */}
       {lightboxOpen && (
         <div
-          className="fixed inset-0 z-[70] bg-black/90 backdrop-blur-sm flex flex-col justify-between p-4 sm:p-6"
+          className="fixed inset-0 z-[70] bg-slate-950/92 flex flex-col justify-between p-4 sm:p-6 animate-backdrop-in"
           onClick={() => setLightboxOpen(false)}
           role="dialog"
           aria-modal="true"

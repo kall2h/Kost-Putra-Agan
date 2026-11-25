@@ -272,7 +272,7 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/55 backdrop-blur-xs animate-backdrop-in"
+        className="fixed inset-0 bg-slate-950/50 animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -280,7 +280,7 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="room-type-modal-title"
-        className="relative z-10 w-full max-w-2xl rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
+        className="relative z-10 w-full max-w-2xl rounded-2xl bg-white dark:bg-[#0e191d] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
       >
         <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -333,17 +333,17 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
                   type="button"
                   disabled={uploadingImg || images.length >= MAX_GALLERY_ITEMS}
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-primary text-xs font-medium transition-all disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 min-h-[36px] px-3.5 py-1.5 rounded-xl btn-primary text-xs font-medium disabled:opacity-50"
                 >
-                  <ImagePlus className="w-3.5 h-3.5" />
-                  <span>{uploadingImg ? 'Memproses...' : '+ Unggah Foto'}</span>
+                  <ImagePlus className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>{uploadingImg ? 'Memproses...' : 'Unggah Foto'}</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleResetDefaultGallery}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-teal-900/15 dark:border-teal-400/20 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-teal-500/[0.06] transition-colors"
+                  className="inline-flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Reset Default</span>
                 </button>
               </div>
@@ -439,9 +439,9 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
                 <button
                   type="button"
                   onClick={handleAddImageUrl}
-                  className="sm:col-span-2 inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg border border-teal-700/25 dark:border-teal-400/25 text-xs font-medium text-teal-800 dark:text-teal-200 hover:bg-teal-500/10 transition-colors"
+                  className="sm:col-span-2 inline-flex items-center justify-center gap-1 min-h-[36px] px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium"
                 >
-                  <Link2 className="w-3.5 h-3.5" />
+                  <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
                   <span>Tambah</span>
                 </button>
               </div>
@@ -565,16 +565,16 @@ export const RoomTypeModal: React.FC<RoomTypeModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition-colors"
+              className="min-h-[40px] px-4 py-2 rounded-xl btn-secondary text-sm font-medium"
             >
               Batal
             </button>
             <button
               type="submit"
               disabled={saving || uploadingImg}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg btn-primary text-sm font-medium transition-all disabled:opacity-60"
+              className="inline-flex items-center gap-2 min-h-[40px] px-5 py-2 rounded-xl btn-primary text-sm font-medium disabled:opacity-60"
             >
-              <Save className="w-4 h-4" />
+              <Save className="w-4 h-4" aria-hidden="true" />
               <span>{saving ? 'Menyimpan...' : 'Simpan Panel Tipe'}</span>
             </button>
           </div>

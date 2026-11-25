@@ -3,9 +3,19 @@
 
 @layer base {
   :root {
-    --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    --font-sans: 'DM Sans', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    --font-display: 'Bricolage Grotesque', system-ui, -apple-system, sans-serif;
+    --font-sans: 'Figtree', system-ui, -apple-system, sans-serif;
+    --font-num: 'Manrope', 'Figtree', system-ui, -apple-system, sans-serif;
+    --accent-50: #f0fdfa;
+    --accent-300: #5eead4;
+    --accent-400: #2dd4bf;
+    --accent-500: #14b8a6;
+    --accent-600: #0d9488;
+    --accent-700: #0f766e;
+    --accent-800: #115e59;
+    --accent-900: #134e4a;
+    --accent-600-rgb: 13, 148, 136;
+    --accent-700-rgb: 15, 118, 110;
   }
 
   html {
@@ -14,8 +24,10 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #f6f9f9;
-    background-image: linear-gradient(180deg, #f8fbfb 0%, #f1f6f6 100%);
+    background-color: #f3f6f5;
+    background-image:
+      radial-gradient(ellipse 85% 45% at 50% -10%, rgba(var(--accent-600-rgb), 0.08), transparent 72%),
+      linear-gradient(180deg, #f7faf9 0%, #edf3f1 100%);
     background-attachment: fixed;
     color: #0f172a;
     overflow-x: hidden;
@@ -24,19 +36,24 @@
   }
 
   .dark body {
-    background-color: #091114;
-    background-image: linear-gradient(180deg, #0b1417 0%, #070e11 100%);
+    background-color: #081012;
+    background-image:
+      radial-gradient(ellipse 80% 45% at 50% -10%, rgba(var(--accent-600-rgb), 0.14), transparent 70%),
+      linear-gradient(180deg, #0a1417 0%, #060d0f 100%);
     background-attachment: fixed;
     color: #f1f5f9;
   }
 
   h1, h2, h3, h4, .font-display {
     font-family: var(--font-display);
+    letter-spacing: -0.015em;
   }
 
   .font-mono-num {
-    font-family: var(--font-mono);
+    font-family: var(--font-num);
     font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: -0.015em;
   }
 
   /* Smooth scrolling inside scrollable panels & drawers */
@@ -45,12 +62,45 @@
     scroll-behavior: smooth;
   }
 
-  /* Tactile click/press animation across buttons & interactive controls */
+  a[href],
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  label[for],
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  [role='button'],
+  [role='tab'],
+  [role='switch'] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Visible keyboard focus indicator across all interactive controls */
+  a:focus-visible,
+  button:focus-visible,
+  select:focus-visible,
+  summary:focus-visible,
+  [role='button']:focus-visible,
+  [role='tab']:focus-visible {
+    outline: 2px solid var(--accent-600);
+    outline-offset: 2px;
+  }
+
+  /* Tactile click/press feedback across buttons & interactive controls */
   button:not(:disabled),
   a.btn-primary,
+  a.btn-secondary,
   [role="button"] {
     transition:
       background-color 160ms ease,
+      background 160ms ease,
       border-color 160ms ease,
       color 160ms ease,
       box-shadow 160ms ease,
@@ -60,15 +110,16 @@
 
   button:not(:disabled):active,
   a.btn-primary:active,
+  a.btn-secondary:active,
   [role="button"]:active {
-    scale: 0.975;
+    scale: 0.98;
   }
 }
 
 @keyframes pageEnter {
   from {
     opacity: 0;
-    translate: 0 8px;
+    translate: 0 6px;
   }
   to {
     opacity: 1;
@@ -79,8 +130,8 @@
 @keyframes modalPopIn {
   from {
     opacity: 0;
-    scale: 0.97;
-    translate: 0 8px;
+    scale: 0.975;
+    translate: 0 6px;
   }
   to {
     opacity: 1;
@@ -92,7 +143,7 @@
 @keyframes drawerSlideIn {
   from {
     opacity: 0;
-    translate: 28px 0;
+    translate: 24px 0;
   }
   to {
     opacity: 1;
@@ -103,7 +154,7 @@
 @keyframes drawerLeftIn {
   from {
     opacity: 0;
-    translate: -28px 0;
+    translate: -24px 0;
   }
   to {
     opacity: 1;
@@ -123,7 +174,7 @@
 @keyframes toastSlideUp {
   from {
     opacity: 0;
-    translate: 0 12px;
+    translate: 0 10px;
   }
   to {
     opacity: 1;
@@ -157,6 +208,7 @@
   }
   button:not(:disabled):active,
   a.btn-primary:active,
+  a.btn-secondary:active,
   [role="button"]:active {
     scale: 1;
   }
@@ -174,92 +226,164 @@
 
 @layer utilities {
   .animate-page-enter {
-    animation: pageEnter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: pageEnter 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .animate-modal-in {
-    animation: modalPopIn 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: modalPopIn 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .animate-drawer-in {
-    animation: drawerSlideIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: drawerSlideIn 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .animate-drawer-left-in {
-    animation: drawerLeftIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: drawerLeftIn 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .animate-backdrop-in {
-    animation: backdropFadeIn 160ms ease-out both;
+    animation: backdropFadeIn 150ms ease-out both;
   }
 
   .animate-toast-in {
-    animation: toastSlideUp 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: toastSlideUp 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .animate-chart-draw {
     stroke-dasharray: 1;
     stroke-dashoffset: 1;
-    animation: chartDrawLine 650ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: chartDrawLine 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   .animate-chart-fade {
-    animation: chartFadeIn 500ms ease-out both;
+    animation: chartFadeIn 450ms ease-out both;
   }
 
-  /* Calm single-elevation flat surface */
+  /* Matte solid content surface for optimal text readability */
   .surface-card {
     background-color: #ffffff;
-    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
   }
   .dark .surface-card {
-    background-color: #0f1a1e;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.25);
-  }
-
-  /* Calm signature focal card */
-  .gradient-hero-card {
-    background: linear-gradient(145deg, #0c4a49 0%, #0f6b66 100%);
-    color: #ffffff;
-    box-shadow: 0 4px 14px -4px rgba(15, 107, 102, 0.25);
-  }
-  .dark .gradient-hero-card {
-    background: linear-gradient(145deg, #0b3f3f 0%, #0e605c 100%);
-    color: #ffffff;
-    box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.35);
-  }
-
-  /* Calm primary CTA button */
-  .btn-primary {
-    background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
-    color: #ffffff;
-    box-shadow: 0 1px 2px 0 rgba(13, 148, 136, 0.2);
-  }
-  .btn-primary:hover {
-    background: linear-gradient(135deg, #0d6a63 0%, #0b8277 100%);
-  }
-  .dark .btn-primary {
-    background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
-    color: #ffffff;
+    background-color: #0e191d;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3);
   }
-  .dark .btn-primary:hover {
-    background: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%);
+
+  /* Purposeful frosted glass accent for sticky top bar & floating overlays */
+  .glass-surface {
+    background-color: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+  .dark .glass-surface {
+    background-color: rgba(11, 21, 24, 0.78);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  /* Subtle accent gradient highlight for focal KPI cells */
+  .focal-surface {
+    background: linear-gradient(
+      145deg,
+      rgba(var(--accent-600-rgb), 0.09) 0%,
+      rgba(var(--accent-600-rgb), 0.03) 55%,
+      #ffffff 100%
+    );
+  }
+  .dark .focal-surface {
+    background: linear-gradient(
+      145deg,
+      rgba(var(--accent-700-rgb), 0.34) 0%,
+      rgba(14, 25, 29, 0.98) 85%
+    );
+  }
+
+  /* Architectural signature gradient card */
+  .gradient-hero-card {
+    background: linear-gradient(145deg, var(--accent-900) 0%, var(--accent-700) 55%, var(--accent-600) 100%);
+    color: #ffffff;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.14),
+      0 6px 18px -6px rgba(var(--accent-700-rgb), 0.36);
+  }
+  .dark .gradient-hero-card {
+    background: linear-gradient(145deg, var(--accent-900) 0%, var(--accent-800) 55%, var(--accent-700) 100%);
+    color: #ffffff;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 8px 20px -6px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Tactile primary CTA button with directional gradient */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent-800) 0%, var(--accent-700) 50%, var(--accent-600) 100%);
+    color: #ffffff;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 2px 8px -2px rgba(var(--accent-700-rgb), 0.34);
+  }
+  .btn-primary:hover:not(:disabled) {
+    filter: brightness(0.95);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 4px 12px -2px rgba(var(--accent-700-rgb), 0.44);
+  }
+  .dark .btn-primary {
+    background: linear-gradient(135deg, var(--accent-700) 0%, var(--accent-600) 100%);
+    color: #ffffff;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.2),
+      0 2px 10px -2px rgba(0, 0, 0, 0.4);
+  }
+  .dark .btn-primary:hover:not(:disabled) {
+    filter: brightness(1.08);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.25),
+      0 4px 14px -2px rgba(var(--accent-600-rgb), 0.38);
+  }
+
+  /* Consistent UI/UX-friendly secondary button */
+  .btn-secondary {
+    background-color: #ffffff;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    color: #334155;
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+  }
+  .btn-secondary:hover:not(:disabled) {
+    background-color: #f8fafc;
+    border-color: rgba(var(--accent-700-rgb), 0.45);
+    color: var(--accent-700);
+  }
+  .dark .btn-secondary {
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #e2e8f0;
+  }
+  .dark .btn-secondary:hover:not(:disabled) {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(var(--accent-600-rgb), 0.55);
+    color: var(--accent-300);
   }
 
   /* Active navigation & segmented control */
   .nav-active-gradient {
-    background-color: #0f766e;
+    background: linear-gradient(135deg, var(--accent-800) 0%, var(--accent-700) 55%, var(--accent-600) 100%);
     color: #ffffff;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      0 1px 4px -1px rgba(var(--accent-700-rgb), 0.3);
   }
   .dark .nav-active-gradient {
-    background-color: #0d9488;
+    background: linear-gradient(135deg, var(--accent-700) 0%, var(--accent-600) 100%);
     color: #ffffff;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      0 1px 4px -1px rgba(0, 0, 0, 0.35);
   }
 
   /* Clean progress bar fill */
   .gradient-bar {
-    background: linear-gradient(90deg, #0f766e 0%, #14b8a6 100%);
+    background: linear-gradient(90deg, var(--accent-800) 0%, var(--accent-600) 60%, var(--accent-500) 100%);
   }
 
   /* Calm input surface */
@@ -267,23 +391,24 @@
     background-color: #ffffff;
     border-color: #cbd5e1;
     color: #0f172a;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background-color 150ms ease;
   }
   .input-surface:focus {
     background-color: #ffffff;
-    border-color: #0f766e;
+    border-color: var(--accent-700);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+    box-shadow: 0 0 0 3px rgba(var(--accent-700-rgb), 0.15);
   }
   .dark .input-surface {
-    background-color: #091215;
+    background-color: #081215;
     border-color: rgba(255, 255, 255, 0.14);
     color: #f8fafc;
   }
   .dark .input-surface:focus {
-    background-color: #0b161a;
-    border-color: #14b8a6;
+    background-color: #0a171b;
+    border-color: var(--accent-400);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.16);
+    box-shadow: 0 0 0 3px rgba(var(--accent-600-rgb), 0.2);
   }
 
   /* Hide scrollbar for swipeable photo sliders */

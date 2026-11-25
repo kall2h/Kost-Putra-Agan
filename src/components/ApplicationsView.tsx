@@ -97,18 +97,18 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
           <button
             type="button"
             onClick={handleCopyLink}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg btn-primary text-xs font-medium transition-colors"
+            className="inline-flex items-center gap-2 min-h-[38px] px-4 py-2 rounded-xl btn-primary text-xs font-medium"
           >
-            <Copy className="w-3.5 h-3.5" />
+            <Copy className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Salin Link Formulir</span>
           </button>
           <button
             type="button"
             onClick={onOpenPublicForm}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.03] hover:bg-slate-50 dark:hover:bg-white/[0.06] text-slate-700 dark:text-slate-200 text-xs font-medium transition-colors"
+            className="inline-flex items-center gap-2 min-h-[38px] px-4 py-2 rounded-xl btn-secondary text-xs font-medium"
           >
             <span>Pratinjau Form</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
       </section>
@@ -122,16 +122,16 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
               key={tab}
               type="button"
               onClick={() => setFilter(tab)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+              className={`min-h-[34px] px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap ${
                 active
-                  ? 'bg-slate-900 text-white dark:bg-white/[0.12] dark:text-white'
+                  ? 'nav-active-gradient text-white'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               {tab === 'all' ? 'Semua' : tab}{' '}
               <span
                 className={`font-mono-num ml-1 ${
-                  active ? 'text-slate-300 dark:text-teal-300' : 'text-slate-400 dark:text-slate-500'
+                  active ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'
                 }`}
               >
                 {counts[tab]}
@@ -155,7 +155,7 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
           <button
             type="button"
             onClick={onOpenPublicForm}
-            className="px-4 py-2 rounded-lg btn-primary text-xs font-medium transition-colors"
+            className="min-h-[38px] px-4 py-2 rounded-xl btn-primary text-xs font-medium"
           >
             Buka Formulir Calon Penyewa
           </button>
@@ -237,9 +237,9 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
                       <button
                         type="button"
                         onClick={() => onRejectApplication(app.id)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-xs font-medium transition-colors"
+                        className="inline-flex items-center gap-1.5 min-h-[36px] px-3 py-1.5 rounded-xl btn-secondary text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:border-rose-300 dark:hover:border-rose-500/30 hover:text-rose-700 text-xs font-medium"
                       >
-                        <XCircle className="w-3.5 h-3.5" />
+                        <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
                         <span>Tolak</span>
                       </button>
 
@@ -247,10 +247,10 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setApprovingApp(app)}
-                          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg btn-primary text-xs font-medium transition-colors"
+                          className="inline-flex items-center gap-1.5 min-h-[36px] px-4 py-1.5 rounded-xl btn-primary text-xs font-medium"
                         >
-                          <UserCheck className="w-3.5 h-3.5" />
-                          <span>Terima & Check-In</span>
+                          <UserCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                          <span>Terima &amp; Check-In</span>
                         </button>
                       ) : (
                         <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
@@ -285,14 +285,14 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
       {approvingApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="fixed inset-0 bg-black/55 backdrop-blur-xs"
+            className="fixed inset-0 bg-slate-950/50 animate-backdrop-in"
             onClick={() => !busy && setApprovingApp(null)}
             aria-hidden="true"
           />
           <div
             role="dialog"
             aria-modal="true"
-            className="relative z-10 w-full max-w-md rounded-2xl bg-white dark:bg-[#111720] border border-slate-200 dark:border-white/[0.1] p-6 space-y-4 shadow-xl"
+            className="animate-modal-in relative z-10 w-full max-w-md rounded-2xl bg-white dark:bg-[#0e191d] border border-slate-200 dark:border-white/[0.1] p-6 space-y-4 shadow-xl"
           >
             <h3 className="font-display font-semibold text-base text-slate-900 dark:text-white">
               Konfirmasi Check-In Kamar {approvingApp.roomNumber}
@@ -306,7 +306,7 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
               tagihan bulan berjalan.
             </p>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0B1017] border border-slate-200 dark:border-white/[0.08] space-y-3">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#081215] border border-slate-200 dark:border-white/[0.08] space-y-3">
               <label className="flex items-center justify-between cursor-pointer text-xs font-medium text-slate-800 dark:text-slate-200">
                 <span>Sewa bulan pertama langsung Lunas</span>
                 <input
@@ -335,7 +335,7 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
                 type="button"
                 disabled={busy}
                 onClick={() => setApprovingApp(null)}
-                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] text-xs font-medium text-slate-700 dark:text-slate-300"
+                className="min-h-[38px] px-4 py-2 rounded-xl btn-secondary text-xs font-medium"
               >
                 Batal
               </button>
@@ -343,7 +343,7 @@ export const ApplicationsView: React.FC<ApplicationsViewProps> = ({
                 type="button"
                 disabled={busy}
                 onClick={handleConfirmApprove}
-                className="px-4 py-2 rounded-lg btn-primary disabled:opacity-60 text-xs font-medium transition-colors"
+                className="min-h-[38px] px-4 py-2 rounded-xl btn-primary disabled:opacity-60 text-xs font-medium"
               >
                 {busy ? 'Memproses...' : 'Setujui & Check-In'}
               </button>

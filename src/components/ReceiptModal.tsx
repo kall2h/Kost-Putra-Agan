@@ -162,7 +162,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/55 backdrop-blur-xs no-print animate-backdrop-in"
+        className="fixed inset-0 bg-slate-950/50 no-print animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -170,7 +170,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label="Kwitansi Pembayaran Digital"
-        className="relative z-10 w-full max-w-xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
+        className="relative z-10 w-full max-w-xl max-h-[92vh] flex flex-col rounded-2xl bg-white dark:bg-[#0e191d] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
       >
         {/* Minimal Top Action Bar */}
         <div className="px-6 py-3 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between no-print">
@@ -347,14 +347,14 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         </div>
 
         {/* Bottom Actions */}
-        <div className="px-6 py-3.5 bg-slate-50 dark:bg-[#0D1219] border-t border-slate-200/80 dark:border-white/[0.07] flex flex-wrap items-center justify-between gap-2.5 no-print">
+        <div className="px-6 py-3.5 bg-slate-50 dark:bg-[#0b1417] border-t border-slate-200/80 dark:border-white/[0.07] flex flex-wrap items-center justify-between gap-2.5 no-print">
           <button
             type="button"
             disabled={creatingLink}
             onClick={handleCopyOrCreateLink}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.08] text-xs font-medium transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-2 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
           >
-            <Link2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+            <Link2 className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden="true" />
             <span>{shareUrl ? 'Salin Link PDF' : 'Buat Link PDF'}</span>
           </button>
 
@@ -362,35 +362,35 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             <button
               type="button"
               onClick={handleCopyWA}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.08] text-xs font-medium transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-2 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
             >
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Salin WA</span>
             </button>
             <a
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-teal-700/25 dark:border-teal-400/25 bg-teal-50/80 dark:bg-teal-500/10 text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-2 rounded-xl border border-teal-700/25 dark:border-teal-400/25 bg-teal-50/80 dark:bg-teal-500/10 text-teal-800 dark:text-teal-200 hover:border-teal-600 text-xs font-medium whitespace-nowrap"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Kirim ke WA</span>
             </a>
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.08] text-xs font-medium transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 min-h-[38px] px-3 py-2 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="w-3.5 h-3.5" aria-hidden="true" />
               <span>Cetak</span>
             </button>
             <button
               type="button"
               disabled={downloadingPdf}
               onClick={handleDownloadPdf}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg btn-primary text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 min-h-[38px] px-4 py-2 rounded-xl btn-primary text-xs sm:text-sm font-medium whitespace-nowrap"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-4 h-4" aria-hidden="true" />
               <span>{downloadingPdf ? 'Membuat...' : 'Unduh PDF'}</span>
             </button>
           </div>

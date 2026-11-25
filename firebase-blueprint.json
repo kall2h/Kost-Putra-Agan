@@ -855,6 +855,15 @@
           "type": "string",
           "enum": ["dark", "light"]
         },
+        "uiColorPreset": {
+          "type": "string",
+          "enum": ["emerald", "ocean", "indigo", "amber", "rose", "slate", "custom"]
+        },
+        "uiCustomColor": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "maxLength": 7
+        },
         "updatedAt": {
           "type": "string",
           "format": "date-time"

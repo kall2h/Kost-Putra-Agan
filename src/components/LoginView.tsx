@@ -197,20 +197,23 @@ export const LoginView: React.FC<LoginViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-white dark:bg-[#091215] text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-[#f7faf9] dark:bg-[#081012] text-slate-900 dark:text-slate-100">
       {/* Left Clean Architectural Showcase */}
       <aside className="hidden lg:flex lg:col-span-6 xl:col-span-7 relative overflow-hidden bg-[#0a1417] flex-col justify-between p-12 xl:p-16 text-white">
         {!heroImgError && (
           <img
             src={PROPERTY_EXTERIOR_IMG}
             alt="Kost Putra Agan"
+            width={1200}
+            height={900}
+            fetchPriority="high"
             referrerPolicy="no-referrer"
             onError={() => setHeroImgError(true)}
             className="absolute inset-0 w-full h-full object-cover object-center opacity-80"
           />
         )}
         <div
-          className="absolute inset-0 bg-gradient-to-t from-[#060d0f]/90 via-[#071113]/40 to-[#060d0f]/35"
+          className="absolute inset-0 bg-gradient-to-t from-[#061314]/92 via-[#092426]/45 to-[#061314]/40"
           aria-hidden="true"
         />
 
@@ -285,7 +288,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   type="button"
                   disabled={loading}
                   onClick={onCheckEmailVerified}
-                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
+                  className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -299,7 +302,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   type="button"
                   disabled={loading || resendCooldown > 0}
                   onClick={handleResendClick}
-                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/60 disabled:opacity-50 text-xs font-medium whitespace-nowrap"
+                  className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2.5 rounded-xl btn-secondary disabled:opacity-50 text-xs font-medium whitespace-nowrap"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   <span>
@@ -360,7 +363,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
+                  className="flex-1 inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
                 >
                   {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>{loading ? 'Menyimpan...' : 'Aktifkan Akun'}</span>
@@ -368,7 +371,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  className="min-h-[44px] px-4 py-2.5 rounded-xl btn-secondary text-xs font-medium"
                 >
                   Ganti
                 </button>
@@ -433,7 +436,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
+                className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>{loading ? 'Mengirim...' : 'Kirim Tautan Reset'}</span>
@@ -502,7 +505,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 type="button"
                 disabled={loading}
                 onClick={onGoogleLogin}
-                className="w-full inline-flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-lg bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/80 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm font-medium shadow-2xs disabled:opacity-60 whitespace-nowrap"
+                className="w-full inline-flex items-center justify-center gap-2.5 min-h-[44px] px-4 py-2.5 rounded-xl btn-secondary text-sm font-medium disabled:opacity-60 whitespace-nowrap"
               >
                 <GoogleMark className="w-4 h-4 shrink-0" />
                 <span>
@@ -584,7 +587,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
+                    className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
                   >
                     {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                     <span>{loading ? 'Memproses...' : 'Masuk'}</span>
@@ -694,7 +697,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
+                    className="w-full inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-2.5 rounded-xl btn-primary disabled:opacity-60 text-sm font-medium whitespace-nowrap"
                   >
                     {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                     <span>{loading ? 'Mendaftarkan...' : 'Daftar'}</span>

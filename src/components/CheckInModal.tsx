@@ -97,7 +97,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
+        className="fixed inset-0 bg-slate-950/50 animate-backdrop-in"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -105,7 +105,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="checkin-modal-title"
-        className="relative z-10 w-full max-w-lg rounded-2xl bg-white dark:bg-[#0f1a1e] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
+        className="relative z-10 w-full max-w-lg rounded-2xl bg-white dark:bg-[#0e191d] border border-slate-200/90 dark:border-white/[0.1] shadow-xl overflow-hidden animate-modal-in"
       >
         <div className="px-6 py-4 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -154,7 +154,7 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
                 >
                   {availableRooms.map((r) => (
                     <option key={r.id} value={r.number}>
-                      {getRoomDisplayName(r)} — {r.tier} ({formatIDR(r.monthlyRate)})
+                      {getRoomDisplayName(r)} · {r.tier} ({formatIDR(r.monthlyRate)})
                     </option>
                   ))}
                 </select>
@@ -344,15 +344,15 @@ export const CheckInModal: React.FC<CheckInModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-white/[0.1] text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/[0.05] transition-colors"
+                className="min-h-[40px] px-4 py-2 rounded-xl btn-secondary text-sm font-medium"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 rounded-lg btn-primary text-sm font-medium transition-colors"
+                className="min-h-[40px] px-5 py-2 rounded-xl btn-primary text-sm font-medium"
               >
-                Simpan & Check-In
+                Simpan &amp; Check-In
               </button>
             </div>
           </form>
