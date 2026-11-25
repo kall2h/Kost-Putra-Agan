@@ -10,6 +10,7 @@ interface TopBarProps {
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   onOpenMobileNav: () => void;
+  mobileNavOpen: boolean;
   onPrimaryAction: () => void;
   onNavigateSettings: () => void;
 }
@@ -40,6 +41,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   theme,
   onToggleTheme,
   onOpenMobileNav,
+  mobileNavOpen,
   onPrimaryAction,
   onNavigateSettings,
 }) => {
@@ -50,8 +52,12 @@ export const TopBar: React.FC<TopBarProps> = ({
         <button
           type="button"
           onClick={onOpenMobileNav}
+          id="mobile-nav-trigger"
+          data-mobile-nav-trigger
           className="lg:hidden p-2 -ml-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-colors"
           aria-label="Buka menu navigasi"
+          aria-controls="mobile-navigation"
+          aria-expanded={mobileNavOpen}
         >
           <Menu className="w-5 h-5" />
         </button>

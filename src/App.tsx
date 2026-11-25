@@ -1592,6 +1592,7 @@ export default function App() {
             })
           }
           onOpenMobileNav={() => setMobileNavOpen(true)}
+          mobileNavOpen={mobileNavOpen}
           onPrimaryAction={handleTopBarPrimaryAction}
           onNavigateSettings={() => setActivePage('settings')}
         />

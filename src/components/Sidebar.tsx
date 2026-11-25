@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   LayoutDashboard,
   BedDouble,
@@ -51,15 +51,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const occupancyPct = totalRooms > 0 ? Math.round((occupiedCount / totalRooms) * 100) : 0;
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    closeButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onCloseMobile();
+        window.requestAnimationFrame(() => {
+          document.querySelector<HTMLButtonElement>('[data-mobile-nav-trigger]')?.focus();
+        });
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileOpen, onCloseMobile]);
+
+  const closeMobileAndRestoreFocus = () => {
+    onCloseMobile();
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLButtonElement>('[data-mobile-nav-trigger]')?.focus();
+    });
+  };
 
   const content = (
-    <div className="flex flex-col h-full bg-white dark:bg-[#0c161a] border-r border-slate-200/80 dark:border-white/[0.08] select-none">
-      {/* Brand Header */}
-      <div className="h-16 px-5 flex items-center justify-between border-b border-slate-200/70 dark:border-white/[0.07]">
+    <div className="flex flex-col h-full bg-white dark:bg-[#0c161a] border-r border-slate-200 dark:border-white/[0.08] select-none">
+      <div className="h-16 px-4 flex items-center justify-between border-b border-slate-200 dark:border-white/[0.07]">
         <div className="flex items-center gap-3 min-w-0">
-          <PropertyLogo className="w-8 h-8 rounded-lg" />
+          <PropertyLogo className="w-9 h-9 rounded-md" />
           <div className="min-w-0">
-            <p className="font-display font-semibold text-sm tracking-tight text-slate-900 dark:text-white truncate">
+            <p className="font-display font-semibold text-sm text-slate-900 dark:text-white truncate">
               {propertyName}
             </p>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
@@ -68,8 +92,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
         <button
+          ref={closeButtonRef}
           type="button"
-          onClick={onCloseMobile}
+          onClick={closeMobileAndRestoreFocus}
           className="lg:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
           aria-label="Tutup navigasi"
         >
@@ -77,8 +102,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto" aria-label="Menu Utama">
+      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto" aria-label="Menu Utama">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive = activePage === item.id;
@@ -90,19 +114,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
               type="button"
               onClick={() => {
                 onSelectPage(item.id);
-                onCloseMobile();
+                closeMobileAndRestoreFocus();
               }}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`w-full flex items-center justify-between min-h-11 px-3 py-2.5 rounded-md text-sm transition-colors whitespace-nowrap ${
                 isActive
-                  ? 'bg-teal-50 dark:bg-teal-500/15 text-teal-800 dark:text-teal-200'
-                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white'
+                  ? 'nav-active-gradient font-semibold'
+                  : 'font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] hover:text-slate-900 dark:hover:text-white'
               }`}
             >
               <span className="flex items-center gap-3 min-w-0">
                 <Icon
                   className={`w-[18px] h-[18px] shrink-0 ${
                     isActive
-                      ? 'text-teal-700 dark:text-teal-300'
+                      ? 'text-white'
                       : 'text-slate-400 dark:text-slate-500'
                   }`}
                 />
@@ -110,10 +135,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </span>
               {badgeCount > 0 && (
                 <span
-                  className={`font-mono-num text-xs font-semibold ${
+                  className={`font-mono-num text-xs tabular-nums ${
                     isActive
-                      ? 'text-teal-700 dark:text-teal-300'
-                      : 'text-rose-600 dark:text-rose-400'
+                      ? 'text-teal-50'
+                      : 'text-slate-500 dark:text-slate-400'
                   }`}
                 >
                   {badgeCount}
@@ -124,29 +149,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
         })}
       </nav>
 
-      {/* Bottom Occupancy Summary & Account Logout */}
-      <div className="p-5 border-t border-slate-200/70 dark:border-white/[0.07] space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-baseline justify-between">
-            <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+      <div className="px-4 py-4 border-t border-slate-200 dark:border-white/[0.07] space-y-3">
+        <div className="space-y-1.5">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-xs text-slate-600 dark:text-slate-300">
               Okupansi Kamar
             </span>
             <span className="font-mono-num text-xs font-semibold text-slate-900 dark:text-white">
               {occupancyPct}%
             </span>
           </div>
-          <div className="w-full h-1.5 rounded-full bg-slate-200/80 dark:bg-white/[0.08] overflow-hidden">
+          <div className="w-full h-1 rounded-full bg-slate-200 dark:bg-white/[0.08] overflow-hidden">
             <div
-              className="h-full rounded-full gradient-bar transition-all duration-300"
+              className="h-full rounded-full bg-teal-700 dark:bg-teal-500 transition-all duration-300"
               style={{ width: `${occupancyPct}%` }}
             />
           </div>
-          <p className="font-mono-num text-[11px] text-slate-500 dark:text-slate-400">
+          <p className="font-mono-num text-[11px] text-slate-500 dark:text-slate-400 tabular-nums">
             {occupiedCount} dari {totalRooms} unit terisi
           </p>
         </div>
 
-        <div className="pt-3 border-t border-slate-200/70 dark:border-white/[0.07] flex items-center justify-between gap-2">
+        <div className="pt-3 border-t border-slate-200 dark:border-white/[0.07] flex items-center justify-between gap-2">
           <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
             {userEmail ?? 'Admin Kos'}
           </span>
@@ -173,11 +197,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden flex">
           <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs animate-backdrop-in"
-            onClick={onCloseMobile}
+            className="fixed inset-0 bg-slate-950/45 animate-backdrop-in"
+            onClick={closeMobileAndRestoreFocus}
             aria-hidden="true"
           />
-          <aside className="relative w-[264px] max-w-[80vw] h-full z-10 animate-drawer-left-in">
+          <aside
+            id="mobile-navigation"
+            className="relative w-[264px] max-w-[80vw] h-full z-10 animate-drawer-left-in"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigasi utama"
+          >
             {content}
           </aside>
         </div>

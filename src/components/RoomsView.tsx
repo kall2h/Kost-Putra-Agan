@@ -25,14 +25,7 @@ interface RoomsViewProps {
   onOpenAddRoom: () => void;
 }
 
-type RoomFilter =
-  | 'all'
-  | 'occupied'
-  | 'vacant'
-  | 'maintenance'
-  | 'tipeA'
-  | 'tipeB'
-  | 'tipeC';
+type StatusFilter = 'all' | 'occupied' | 'vacant' | 'maintenance';
 
 export const RoomsView: React.FC<RoomsViewProps> = ({
   rooms,
@@ -43,7 +36,8 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
   onEditRoomType,
   onOpenAddRoom,
 }) => {
-  const [filter, setFilter] = useState<RoomFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [tierFilter, setTierFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
@@ -62,22 +56,31 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
       occupied: rooms.filter((r) => r.status === 'Terisi').length,
       vacant: rooms.filter((r) => r.status === 'Tersedia').length,
       maintenance: rooms.filter((r) => r.status === 'Perawatan').length,
-      tipeA: rooms.filter((r) => r.tier === 'Tipe A').length,
-      tipeB: rooms.filter((r) => r.tier === 'Tipe B').length,
-      tipeC: rooms.filter((r) => r.tier === 'Tipe C').length,
     }),
     [rooms]
   );
 
+  const tierOptions = useMemo(() => {
+    const fromConfig = activeRoomTypes.map((rt) => ({
+      value: rt.tier,
+      label: rt.displayName?.trim() || rt.tier,
+    }));
+    const existingTiers = Array.from(new Set(rooms.map((r) => r.tier).filter(Boolean)));
+    existingTiers.forEach((tier) => {
+      if (!fromConfig.some((item) => item.value === tier)) {
+        fromConfig.push({ value: tier, label: tier });
+      }
+    });
+    return fromConfig;
+  }, [activeRoomTypes, rooms]);
+
   const filteredRooms = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rooms.filter((room) => {
-      if (filter === 'occupied' && room.status !== 'Terisi') return false;
-      if (filter === 'vacant' && room.status !== 'Tersedia') return false;
-      if (filter === 'maintenance' && room.status !== 'Perawatan') return false;
-      if (filter === 'tipeA' && room.tier !== 'Tipe A') return false;
-      if (filter === 'tipeB' && room.tier !== 'Tipe B') return false;
-      if (filter === 'tipeC' && room.tier !== 'Tipe C') return false;
+      if (statusFilter === 'occupied' && room.status !== 'Terisi') return false;
+      if (statusFilter === 'vacant' && room.status !== 'Tersedia') return false;
+      if (statusFilter === 'maintenance' && room.status !== 'Perawatan') return false;
+      if (tierFilter !== 'all' && room.tier !== tierFilter) return false;
 
       if (!q) return true;
       return (
@@ -89,21 +92,15 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
         (room.tenant?.originCity.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [rooms, filter, search]);
+  }, [rooms, statusFilter, tierFilter, search]);
 
-  const typeLabel = (id: 'tipe-a' | 'tipe-b' | 'tipe-c', fallback: string) =>
-    activeRoomTypes.find((t) => t.id === id)?.displayName?.trim() || fallback;
-
-  const filterTabs: { id: RoomFilter; label: string; count: number }[] = [
+  const statusTabs: { id: StatusFilter; label: string; count: number }[] = [
     { id: 'all', label: 'Semua', count: counts.all },
     { id: 'occupied', label: 'Terisi', count: counts.occupied },
     { id: 'vacant', label: 'Tersedia', count: counts.vacant },
     ...(counts.maintenance > 0
       ? [{ id: 'maintenance' as const, label: 'Perawatan', count: counts.maintenance }]
       : []),
-    { id: 'tipeA', label: typeLabel('tipe-a', 'Tipe A'), count: counts.tipeA },
-    { id: 'tipeB', label: typeLabel('tipe-b', 'Tipe B'), count: counts.tipeB },
-    { id: 'tipeC', label: typeLabel('tipe-c', 'Tipe C'), count: counts.tipeC },
   ];
 
   return (
@@ -111,9 +108,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
       {/* Editable Room Type Panels with Photo Slider */}
       <section aria-label="Panel Tipe Kamar" className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {activeRoomTypes.map((rt) => {
-          const typeFilterId: RoomFilter =
-            rt.id === 'tipe-a' ? 'tipeA' : rt.id === 'tipe-b' ? 'tipeB' : 'tipeC';
-          const isSelected = filter === typeFilterId;
+          const isSelected = tierFilter === rt.tier;
           const typeRooms = rooms.filter((r) => r.tier === rt.tier);
           const vacantCount = typeRooms.filter((r) => r.status === 'Tersedia').length;
           const panelName = rt.displayName?.trim() || rt.tier;
@@ -140,7 +135,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
 
               <div className="p-4 flex-1 flex flex-col justify-between gap-3">
                 <div
-                  onClick={() => setFilter(isSelected ? 'all' : typeFilterId)}
+                  onClick={() => setTierFilter(isSelected ? 'all' : rt.tier)}
                   className="space-y-1.5 cursor-pointer"
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -169,7 +164,7 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
                 <div className="flex items-center justify-between gap-2 pt-2.5 border-t border-slate-200/70 dark:border-white/[0.07]">
                   <button
                     type="button"
-                    onClick={() => setFilter(isSelected ? 'all' : typeFilterId)}
+                    onClick={() => setTierFilter(isSelected ? 'all' : rt.tier)}
                     className="font-mono-num text-xs text-slate-500 dark:text-slate-400 hover:text-teal-700 dark:hover:text-teal-300 transition-colors"
                   >
                     {typeRooms.length} unit ·{' '}
@@ -192,33 +187,59 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
         })}
       </section>
 
-      {/* Toolbar */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3">
-        <div className="flex items-center gap-1 p-1 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-x-auto">
-          {filterTabs.map((tab) => {
-            const active = filter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setFilter(tab.id)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
-                  active
-                    ? 'nav-active-gradient text-white'
-                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
-                }`}
-              >
-                {tab.label}{' '}
-                <span
-                  className={`font-mono-num ml-1 ${
-                    active ? 'text-teal-100' : 'text-slate-400 dark:text-slate-500'
+      {/* Toolbar: 3 Pilihan Utama di Atas, Drop Box Tipe Kamar di Bawahnya */}
+      <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-3">
+        <div className="space-y-2.5">
+          {/* Pilihan Utama: Semua, Terisi, Tersedia */}
+          <div className="flex items-center gap-1 p-1 rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] overflow-x-auto w-fit max-w-full">
+            {statusTabs.map((tab) => {
+              const active = statusFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setStatusFilter(tab.id)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 ${
+                    active
+                      ? 'nav-active-gradient text-white'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.05]'
                   }`}
                 >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
+                  {tab.label}{' '}
+                  <span
+                    className={`font-mono-num ml-1 ${
+                      active ? 'text-teal-100' : 'text-slate-400 dark:text-slate-500'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Drop Box Tipe Kamar di bawah 3 pilihan utama */}
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="room-tier-dropdown"
+              className="text-xs font-medium text-slate-500 dark:text-slate-400"
+            >
+              Tipe Kamar:
+            </label>
+            <select
+              id="room-tier-dropdown"
+              value={tierFilter}
+              onChange={(e) => setTierFilter(e.target.value)}
+              className="px-3 py-1.5 rounded-lg input-surface border text-xs font-medium text-slate-700 dark:text-slate-200 cursor-pointer"
+            >
+              <option value="all">Semua Tipe</option>
+              {tierOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
@@ -291,12 +312,13 @@ export const RoomsView: React.FC<RoomsViewProps> = ({
             Tidak ada unit kamar yang cocok
           </p>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Coba ubah kata kunci pencarian atau pilih filter status kamar lainnya.
+            Coba ubah kata kunci pencarian atau pilih filter status/tipe kamar lainnya.
           </p>
           <button
             type="button"
             onClick={() => {
-              setFilter('all');
+              setStatusFilter('all');
+              setTierFilter('all');
               setSearch('');
             }}
             className="px-4 py-2 rounded-lg btn-primary text-xs font-medium transition-colors"
