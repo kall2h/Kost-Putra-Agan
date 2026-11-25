@@ -11,9 +11,6 @@ import {
   Moon,
   UserPlus,
   Trash2,
-  ShieldCheck,
-  SlidersHorizontal,
-  FileText,
   QrCode,
   Upload,
 } from 'lucide-react';
@@ -190,18 +187,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-stretch">
-      {/* Left 7 Cols: Clean Flat Settings Form */}
+    <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
       <form
         onSubmit={handleSubmit}
-        className="xl:col-span-7 h-full rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col justify-between gap-5"
+        className="xl:col-span-7 rounded-lg bg-white dark:bg-[#0f1a1e] border border-slate-200 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col gap-5"
       >
-        <div className="border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
+        <div className="border-b border-slate-200 dark:border-white/[0.07] pb-3">
           <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
             Profil &amp; Konfigurasi Properti
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Tersinkronisasi otomatis ke seluruh perangkat tim pengelola admin
+            Data identitas, rekening, dan tampilan pengelola.
           </p>
         </div>
 
@@ -494,7 +490,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200/80 dark:border-white/[0.07]">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-white/[0.07]">
           {!confirmReset ? (
             <button
               type="button"
@@ -539,18 +535,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </form>
 
-      {/* Right 5 Cols */}
-      <div className="xl:col-span-5 flex flex-col gap-5">
-        {/* Format & Otomasi Kwitansi PDF */}
-        <section className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 space-y-4">
-          <div className="flex items-start justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
+      <div className="xl:col-span-5 flex flex-col gap-4">
+        <section className="rounded-lg bg-white dark:bg-[#0f1a1e] border border-slate-200 dark:border-white/[0.08] p-5 sm:p-6 space-y-4">
+          <div className="flex items-start justify-between gap-3 border-b border-slate-200 dark:border-white/[0.07] pb-3">
             <div>
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
-                  Kwitansi PDF Otomatis
-                </h2>
-              </div>
+              <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
+                Kwitansi PDF Otomatis
+              </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Format dokumen PDF otomatis saat tagihan ditandai Lunas
               </p>
@@ -584,14 +575,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </section>
 
         {/* Panel & Harga Tipe Kamar */}
-        <section className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 space-y-3">
-          <div className="border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-              <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
-                Panel &amp; Harga Tipe Kamar
-              </h2>
-            </div>
+        <section className="rounded-lg bg-white dark:bg-[#0f1a1e] border border-slate-200 dark:border-white/[0.08] p-5 sm:p-6 space-y-3">
+          <div className="border-b border-slate-200 dark:border-white/[0.07] pb-3">
+            <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
+              Panel &amp; Harga Tipe Kamar
+            </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Atur tarif bulanan, foto, dan deskripsi untuk Tipe A, Tipe B, dan Tipe C
             </p>
@@ -648,14 +636,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </section>
 
         {/* Multi-Admin Team Access */}
-        <section className="rounded-xl surface-card border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 space-y-4">
-          <div className="border-b border-slate-200/80 dark:border-white/[0.07] pb-3">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-              <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
-                Tim Pengelola &amp; Akses Admin
-              </h2>
-            </div>
+        <section className="rounded-lg bg-white dark:bg-[#0f1a1e] border border-slate-200 dark:border-white/[0.08] p-5 sm:p-6 space-y-4">
+          <div className="border-b border-slate-200 dark:border-white/[0.07] pb-3">
+            <h2 className="font-display font-semibold text-base text-slate-900 dark:text-white">
+              Tim Pengelola &amp; Akses Admin
+            </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Daftar akun pengelola aktif ({registeredAdmins.length}) dan undangan email Google
             </p>
@@ -706,6 +691,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                           onClick={() => onRemoveRegisteredAdmin(adm.uid)}
                           className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors"
                           title="Hapus akses admin"
+                          aria-label={`Hapus akses ${adm.name}`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -738,6 +724,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   onClick={() => onRemoveAdminInvite(inv.email)}
                   className="p-1.5 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-500/10 transition-colors shrink-0"
                   title="Batalkan undangan"
+                  aria-label={`Batalkan undangan ${inv.name}`}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -800,32 +787,31 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </form>
         </section>
 
-        {/* Promotional Broadcast Card */}
-        <section className="flex-1 rounded-xl gradient-hero-card border border-teal-800/20 p-5 sm:p-6 flex flex-col justify-between gap-4">
-          <div className="flex items-center justify-between border-b border-white/15 pb-3">
+        <section className="rounded-lg bg-white dark:bg-[#0f1a1e] border border-slate-200 dark:border-white/[0.08] p-5 sm:p-6 flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-3 border-b border-slate-200 dark:border-white/[0.07] pb-3">
             <div>
-              <p className="text-xs font-medium text-teal-200">
-                Info Ketersediaan Real-Time
-              </p>
-              <h3 className="font-display font-semibold text-base text-white mt-0.5">
+              <h3 className="font-display font-semibold text-base text-slate-900 dark:text-white">
                 {form.name}
               </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Info ketersediaan kamar
+              </p>
             </div>
-            <span className="font-mono-num text-sm font-semibold text-white">
+            <span className="font-mono-num text-sm font-semibold text-teal-700 dark:text-teal-300 shrink-0">
               {availableRooms.length} Kosong
             </span>
           </div>
 
-          <p className="text-xs text-teal-50/90 leading-relaxed">
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
             {form.tagline} · {form.address}
           </p>
 
           <div className="space-y-2">
-            <p className="text-xs font-medium text-teal-100">
+            <p className="text-xs font-medium text-slate-700 dark:text-slate-200">
               Unit Siap Huni Saat Ini:
             </p>
             {availableRooms.length === 0 ? (
-              <p className="text-xs text-teal-100/80">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Semua {rooms.length} unit sedang terisi atau dalam perawatan.
               </p>
             ) : (
@@ -833,12 +819,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 {availableRooms.map((r) => (
                   <div
                     key={r.id}
-                    className="px-3 py-2 rounded-lg bg-white/10 border border-white/15 flex items-center justify-between gap-2"
+                    className="px-3 py-2 rounded-md bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] flex items-center justify-between gap-2"
                   >
-                    <span className="font-mono-num text-xs font-semibold text-white truncate">
+                    <span className="font-mono-num text-xs font-semibold text-slate-900 dark:text-white truncate">
                       {getRoomDisplayName(r)}
                     </span>
-                    <span className="font-mono-num text-[11px] text-teal-100 shrink-0">
+                    <span className="font-mono-num text-[11px] text-slate-600 dark:text-slate-300 shrink-0">
                       {formatIDR(r.monthlyRate)}
                     </span>
                   </div>
@@ -851,7 +837,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <button
               type="button"
               onClick={handleCopyPromo}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-white text-[#0c4a49] hover:bg-teal-50 text-xs font-semibold transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md btn-primary text-xs font-medium transition-colors"
             >
               <Copy className="w-3.5 h-3.5" />
               <span>Salin Info</span>
@@ -860,7 +846,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               href={buildWhatsAppUrl('', promoText)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-white/15 hover:bg-white/25 border border-white/25 text-white text-xs font-semibold transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-md border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-white/[0.04] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.07] text-xs font-medium transition-colors"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>Teruskan WA</span>
@@ -869,7 +855,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('messages')}
-            className="w-full inline-flex items-center justify-center gap-1.5 text-xs text-teal-100 hover:text-white underline-offset-4 hover:underline"
+            className="w-full inline-flex items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-teal-700 dark:hover:text-teal-300"
           >
             <MessageSquareText className="w-3.5 h-3.5" />
             <span>Modifikasi Format Pesan di Pusat Pesan &amp; WA</span>
