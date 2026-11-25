@@ -266,6 +266,19 @@ service cloud.firestore {
         && data.createdAt is timestamp;
     }
 
+    function isValidIncomeRecord(data) {
+      return data.keys().hasAll(['title', 'category', 'amount', 'date', 'month', 'createdAt'])
+        && data.keys().hasOnly(['title', 'category', 'amount', 'date', 'month', 'method', 'notes', 'createdAt'])
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 160
+        && data.category in ['Uang Kost', 'Parkir', 'Laundry', 'Deposit', 'Lainnya']
+        && data.amount is number && data.amount >= 0 && data.amount <= 100000000
+        && data.date is string && data.date.size() >= 8 && data.date.size() <= 20
+        && data.month is string && data.month.size() <= 10 && data.month.matches('^[0-9]{4}-[0-9]{2}$')
+        && (!('method' in data) || (data.method is string && data.method.size() <= 40))
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 300))
+        && data.createdAt is timestamp;
+    }
+
     function isValidMessageTemplate(data) {
       return data.keys().hasAll(['name', 'category', 'body', 'updatedAt'])
         && data.keys().hasOnly(['name', 'category', 'body', 'updatedAt'])
@@ -298,7 +311,7 @@ service cloud.firestore {
         && data.keys().hasOnly([
           'name', 'tagline', 'address', 'whatsappAdmin', 'paymentAccountInfo',
           'paymentBankName', 'paymentBankAccount', 'paymentBankHolder',
-          'qrisImageUrl', 'externalPaymentLink', 'defaultDueDay', 'totalRooms', 'updatedAt'
+          'qrisImageUrl', 'externalPaymentLink', 'publicAppUrl', 'defaultDueDay', 'totalRooms', 'updatedAt'
         ])
         && data.name is string && data.name.size() >= 2 && data.name.size() <= 80
         && data.tagline is string && data.tagline.size() <= 140
@@ -310,6 +323,7 @@ service cloud.firestore {
         && (!('paymentBankHolder' in data) || (data.paymentBankHolder is string && data.paymentBankHolder.size() <= 80))
         && (!('qrisImageUrl' in data) || (data.qrisImageUrl is string && data.qrisImageUrl.size() <= 450000))
         && (!('externalPaymentLink' in data) || (data.externalPaymentLink is string && data.externalPaymentLink.size() <= 300))
+        && (!('publicAppUrl' in data) || (data.publicAppUrl is string && data.publicAppUrl.size() <= 200))
         && data.defaultDueDay is number && data.defaultDueDay >= 1 && data.defaultDueDay <= 28
         && data.totalRooms is number && data.totalRooms >= 1 && data.totalRooms <= 200
         && data.updatedAt is timestamp;
@@ -524,6 +538,21 @@ service cloud.firestore {
         && incoming().createdAt == existing().createdAt
         && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'amount', 'date', 'month', 'notes']);
       allow delete: if isAdmin() && isValidId(expenseId);
+    }
+
+    // Collection: incomes (strictly Admin only)
+    match /incomes/{incomeId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidId(incomeId)
+        && isValidIncomeRecord(incoming())
+        && incoming().createdAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(incomeId)
+        && isValidIncomeRecord(incoming())
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'amount', 'date', 'month', 'method', 'notes']);
+      allow delete: if isAdmin() && isValidId(incomeId);
     }
 
     // Collection: messageTemplates (Admin WhatsApp & Broadcast templates)

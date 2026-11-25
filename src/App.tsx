@@ -40,6 +40,8 @@ import {
   DepositStatus,
   ExpenseCategory,
   ExpenseRecord,
+  IncomeCategory,
+  IncomeRecord,
   MaintenanceCategory,
   MaintenanceLog,
   MaintenanceStatus,
@@ -74,6 +76,7 @@ import {
 import {
   addAdminInviteInCloud,
   addExpenseInCloud,
+  addIncomeInCloud,
   addMaintenanceLogInCloud,
   addRoomUnitInCloud,
   checkInTenantToCloud,
@@ -82,8 +85,10 @@ import {
   createBillAndPaymentLinkInCloud,
   createOrSyncPaymentLinkInCloud,
   deleteExpenseInCloud,
+  deleteIncomeInCloud,
   deleteMaintenanceLogInCloud,
   deleteMessageTemplateInCloud,
+  deletePaymentInCloud,
   deleteRoomUnitInCloud,
   generateMonthlyBillsInCloud,
   markPaymentPaidInCloud,
@@ -97,6 +102,8 @@ import {
   saveSettingsInCloud,
   seedInitialDatabaseIfEmpty,
   updateAdminRoleInCloud,
+  updateExpenseInCloud,
+  updateIncomeInCloud,
   updateMaintenanceLogInCloud,
   updatePaymentDetailsInCloud,
   updateRoomReceiptProfileInCloud,
@@ -118,14 +125,16 @@ import {
   buildPdfReceiptInputFromAdmin,
   buildShareablePaymentUrl,
   downloadReceiptPdf,
+  normalizePublicBaseUrl,
   resolveRoomPaymentProfile,
+  setActivePublicAppUrl,
 } from './utils/receiptPdf';
 import { Sidebar } from './components/Sidebar';
 import { TopBar } from './components/TopBar';
 import { Toast } from './components/Toast';
 import { DashboardView } from './components/DashboardView';
 import { RoomsView } from './components/RoomsView';
-import { PaymentsView } from './components/PaymentsView';
+import { PaymentsView, PaymentUpdatePayload } from './components/PaymentsView';
 import { FinanceView } from './components/FinanceView';
 import { MessagesView } from './components/MessagesView';
 import { SettingsView } from './components/SettingsView';
@@ -137,6 +146,7 @@ import { PaymentLinkModal } from './components/PaymentLinkModal';
 import { PublicPaymentView } from './components/PublicPaymentView';
 import { AddPaymentModal } from './components/AddPaymentModal';
 import { AddExpenseModal } from './components/AddExpenseModal';
+import { AddIncomeModal } from './components/AddIncomeModal';
 import { AddRoomModal } from './components/AddRoomModal';
 import { RoomTypeModal } from './components/RoomTypeModal';
 import { LoginView } from './components/LoginView';
@@ -180,7 +190,10 @@ export default function App() {
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [checkInPreselectedRoom, setCheckInPreselectedRoom] = useState<string | null>(null);
   const [addPaymentOpen, setAddPaymentOpen] = useState(false);
+  const [addIncomeOpen, setAddIncomeOpen] = useState(false);
+  const [editingIncome, setEditingIncome] = useState<IncomeRecord | null>(null);
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<ExpenseRecord | null>(null);
   const [addRoomModalOpen, setAddRoomModalOpen] = useState(false);
   const [receiptPayment, setReceiptPayment] = useState<PaymentRecord | null>(null);
   const [receiptAutoNotice, setReceiptAutoNotice] = useState<string | null>(null);
@@ -201,6 +214,7 @@ export default function App() {
   const [paymentLinksById, setPaymentLinksById] = useState<
     Record<string, PaymentLinkRecord>
   >({});
+  const [incomes, setIncomes] = useState<IncomeRecord[]>([]);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [messageTemplates, setMessageTemplates] = useState<MessageTemplate[]>(
     DEFAULT_MESSAGE_TEMPLATES
@@ -276,6 +290,7 @@ export default function App() {
       setTenantsByRoomId({});
       setPayments([]);
       setPaymentLinksById({});
+      setIncomes([]);
       setExpenses([]);
       setMaintenanceLogs([]);
       setTenantHistory([]);
@@ -392,6 +407,7 @@ export default function App() {
           externalPaymentLink: String(
             data.externalPaymentLink ?? prev.externalPaymentLink
           ),
+          publicAppUrl: String(data.publicAppUrl ?? prev.publicAppUrl ?? ''),
           defaultDueDay: Number(data.defaultDueDay ?? prev.defaultDueDay),
           totalRooms: Number(data.totalRooms ?? prev.totalRooms),
         }));
@@ -558,6 +574,29 @@ export default function App() {
         }
       },
       (error) => handleFirestoreError(error, OperationType.GET, 'paymentLinks')
+    );
+
+    const unsubIncomes = onSnapshot(
+      collection(db, 'incomes'),
+      (snap) => {
+        const list: IncomeRecord[] = snap.docs
+          .map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              title: String(data.title ?? ''),
+              category: (data.category ?? 'Lainnya') as IncomeCategory,
+              amount: Number(data.amount ?? 0),
+              date: String(data.date ?? ''),
+              month: String(data.month ?? activeMonth),
+              method: data.method ? (String(data.method) as PaymentMethod) : undefined,
+              notes: data.notes ? String(data.notes) : undefined,
+            };
+          })
+          .sort((a, b) => b.date.localeCompare(a.date));
+        setIncomes(list);
+      },
+      (error) => handleFirestoreError(error, OperationType.GET, 'incomes')
     );
 
     const unsubExpenses = onSnapshot(
@@ -739,6 +778,7 @@ export default function App() {
       unsubTenants();
       unsubPayments();
       unsubPaymentLinks();
+      unsubIncomes();
       unsubExpenses();
       unsubMessageTemplates();
       unsubMaintenance();
@@ -812,6 +852,9 @@ export default function App() {
     payments.forEach((p) => {
       if (!historicalMonths.has(p.month)) liveMonthSet.add(p.month);
     });
+    incomes.forEach((i) => {
+      if (!historicalMonths.has(i.month)) liveMonthSet.add(i.month);
+    });
     expenses.forEach((e) => {
       if (!historicalMonths.has(e.month)) liveMonthSet.add(e.month);
     });
@@ -819,22 +862,25 @@ export default function App() {
     const liveEntries: MonthlyHistoricalSummary[] = Array.from(liveMonthSet)
       .sort()
       .map((month) => {
-        const income = payments
+        const rentIncome = payments
           .filter((p) => p.month === month && p.status === 'Lunas')
           .reduce((acc, p) => acc + p.amount + (p.lateFee ?? 0), 0);
+        const extraIncome = incomes
+          .filter((i) => i.month === month)
+          .reduce((acc, i) => acc + i.amount, 0);
         const expense = expenses
           .filter((e) => e.month === month)
           .reduce((acc, e) => acc + e.amount, 0);
         return {
           month,
           label: formatShortMonth(month),
-          income,
+          income: rentIncome + extraIncome,
           expense,
         };
       });
 
     return [...HISTORICAL_CASHFLOW, ...liveEntries];
-  }, [payments, expenses, activeMonth]);
+  }, [payments, incomes, expenses, activeMonth]);
 
   const selectedRoom = useMemo(
     () => rooms.find((r) => r.id === selectedRoomId) ?? null,
@@ -1418,14 +1464,50 @@ export default function App() {
 
   const handleUpdatePaymentDetails = async (
     paymentId: string,
-    payload: { amount: number; lateFee?: number; notes?: string }
+    payload: PaymentUpdatePayload
   ) => {
     const existing = payments.find((p) => p.id === paymentId);
+    if (payload.status === 'Belum Bayar') {
+      autoSyncedPaymentIdsRef.current.delete(paymentId);
+    } else if (payload.status === 'Lunas') {
+      autoSyncedPaymentIdsRef.current.add(paymentId);
+    }
     await updatePaymentDetailsInCloud(paymentId, {
       ...payload,
       paymentLinkId: existing?.paymentLinkId,
     });
-    setToastMessage('Rincian tagihan & denda berhasil diperbarui');
+    setToastMessage('Riwayat & rincian pembayaran berhasil diperbarui');
+  };
+
+  const handleDeletePayment = async (paymentId: string) => {
+    const existing = payments.find((p) => p.id === paymentId);
+    autoSyncedPaymentIdsRef.current.delete(paymentId);
+    await deletePaymentInCloud(paymentId, existing?.paymentLinkId);
+    setToastMessage(
+      existing
+        ? `Riwayat pembayaran ${existing.tenantName} (${existing.invoiceNo}) dihapus`
+        : 'Riwayat pembayaran berhasil dihapus'
+    );
+  };
+
+  useEffect(() => {
+    setActivePublicAppUrl(settings.publicAppUrl);
+  }, [settings.publicAppUrl]);
+
+  const handleSavePublicAppUrl = async (rawUrl: string) => {
+    const cleanUrl = normalizePublicBaseUrl(rawUrl);
+    const updated: PropertySettings = {
+      ...settings,
+      publicAppUrl: cleanUrl,
+    };
+    setSettings(updated);
+    setActivePublicAppUrl(cleanUrl);
+    await saveSettingsInCloud(updated);
+    setToastMessage(
+      cleanUrl
+        ? `Domain link pembayaran diarahkan ke ${cleanUrl}`
+        : 'Domain kustom dihapus, link memakai domain aktif saat ini'
+    );
   };
 
   const handleCreateOrUpdatePaymentLink = async (payload: {
@@ -1502,15 +1584,44 @@ export default function App() {
     setToastMessage('Profil pembayaran & kwitansi kamar diperbarui');
   };
 
-  const handleAddExpense = async (payload: {
+  const handleSaveIncome = async (payload: {
+    id?: string;
+    title: string;
+    category: IncomeCategory;
+    amount: number;
+    date: string;
+    method?: PaymentMethod;
+    notes?: string;
+  }) => {
+    if (payload.id) {
+      await updateIncomeInCloud(payload.id, payload);
+      setToastMessage(`Pemasukan "${payload.title}" berhasil diperbarui`);
+    } else {
+      await addIncomeInCloud(payload);
+      setToastMessage(`Pemasukan "${payload.title}" berhasil dicatat`);
+    }
+  };
+
+  const handleDeleteIncome = async (id: string) => {
+    await deleteIncomeInCloud(id);
+    setToastMessage('Catatan pemasukan dihapus');
+  };
+
+  const handleSaveExpense = async (payload: {
+    id?: string;
     title: string;
     category: ExpenseCategory;
     amount: number;
     date: string;
     notes?: string;
   }) => {
-    await addExpenseInCloud(payload);
-    setToastMessage(`Pengeluaran "${payload.title}" berhasil dicatat`);
+    if (payload.id) {
+      await updateExpenseInCloud(payload.id, payload);
+      setToastMessage(`Pengeluaran "${payload.title}" berhasil diperbarui`);
+    } else {
+      await addExpenseInCloud(payload);
+      setToastMessage(`Pengeluaran "${payload.title}" berhasil dicatat`);
+    }
   };
 
   const handleDeleteExpense = async (id: string) => {
@@ -1681,6 +1792,7 @@ export default function App() {
     if (activePage === 'rooms') {
       handleOpenCheckIn(availableRooms[0]?.number ?? null);
     } else if (activePage === 'finance') {
+      setEditingExpense(null);
       setAddExpenseOpen(true);
     } else {
       setAddPaymentOpen(true);
@@ -1839,20 +1951,43 @@ export default function App() {
               onDownloadPdfReceipt={handleDownloadPdfReceipt}
               onGenerateMonthlyBills={handleGenerateMonthlyBills}
               onUpdatePaymentDetails={handleUpdatePaymentDetails}
+              onDeletePayment={handleDeletePayment}
             />
           )}
 
           {activePage === 'finance' && (
             <FinanceView
               payments={payments}
+              incomes={incomes}
               expenses={expenses}
               rooms={rooms}
               settings={settings}
               cashflowHistory={fullCashflowHistory}
               selectedMonth={selectedFinanceMonth}
               onChangeMonth={setSelectedFinanceMonth}
-              onOpenAddExpense={() => setAddExpenseOpen(true)}
+              onOpenAddIncome={() => {
+                setEditingIncome(null);
+                setAddIncomeOpen(true);
+              }}
+              onEditIncome={(inc) => {
+                setEditingIncome(inc);
+                setAddIncomeOpen(true);
+              }}
+              onDeleteIncome={handleDeleteIncome}
+              onOpenAddExpense={() => {
+                setEditingExpense(null);
+                setAddExpenseOpen(true);
+              }}
+              onEditExpense={(exp) => {
+                setEditingExpense(exp);
+                setAddExpenseOpen(true);
+              }}
               onDeleteExpense={handleDeleteExpense}
+              onOpenReceipt={(pay) => {
+                setReceiptAutoNotice(null);
+                setReceiptPayment(pay);
+              }}
+              onNavigatePayments={() => setActivePage('payments')}
               onExportSuccess={(msg) => setToastMessage(msg)}
             />
           )}
@@ -1963,10 +2098,24 @@ export default function App() {
         onSubmit={handleAddPayment}
       />
 
+      <AddIncomeModal
+        open={addIncomeOpen}
+        editingIncome={editingIncome}
+        onClose={() => {
+          setAddIncomeOpen(false);
+          setEditingIncome(null);
+        }}
+        onSubmit={handleSaveIncome}
+      />
+
       <AddExpenseModal
         open={addExpenseOpen}
-        onClose={() => setAddExpenseOpen(false)}
-        onSubmit={handleAddExpense}
+        editingExpense={editingExpense}
+        onClose={() => {
+          setAddExpenseOpen(false);
+          setEditingExpense(null);
+        }}
+        onSubmit={handleSaveExpense}
       />
 
       <ReceiptModal
@@ -1997,6 +2146,7 @@ export default function App() {
         templates={messageTemplates}
         onClose={() => setPaymentLinkModalContext({ open: false })}
         onCreateOrUpdateLink={handleCreateOrUpdatePaymentLink}
+        onSavePublicAppUrl={handleSavePublicAppUrl}
         onMarkPaid={handleMarkPaid}
         onNotify={(msg) => setToastMessage(msg)}
       />

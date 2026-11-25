@@ -26,6 +26,7 @@ import { DEFAULT_MESSAGE_TEMPLATES } from '../utils/messageTemplates';
 import {
   DepositStatus,
   ExpenseCategory,
+  IncomeCategory,
   MaintenanceCategory,
   MaintenanceStatus,
   MessageTemplate,
@@ -45,7 +46,7 @@ import {
   Tenant,
 } from '../types/kost';
 import { buildInvoiceNumber, getCurrentMonthISO, getTodayISO } from '../utils/format';
-import { resolveRoomPaymentProfile } from '../utils/receiptPdf';
+import { normalizePublicBaseUrl, resolveRoomPaymentProfile } from '../utils/receiptPdf';
 
 const OWNER_EMAIL = (
   import.meta.env.VITE_PRIMARY_OWNER_EMAIL || 'ekall2h@gmail.com'
@@ -355,6 +356,7 @@ export async function resetDatabaseToDemo(): Promise<void> {
       tenantsSnap,
       paymentsSnap,
       expensesSnap,
+      incomesSnap,
       appsSnap,
       maintenanceSnap,
       historySnap,
@@ -363,6 +365,7 @@ export async function resetDatabaseToDemo(): Promise<void> {
       getDocs(collection(db, 'tenants')),
       getDocs(collection(db, 'payments')),
       getDocs(collection(db, 'expenses')),
+      getDocs(collection(db, 'incomes')),
       getDocs(collection(db, 'applications')),
       getDocs(collection(db, 'maintenanceLogs')),
       getDocs(collection(db, 'tenantHistory')),
@@ -385,6 +388,7 @@ export async function resetDatabaseToDemo(): Promise<void> {
       if (!initialPaymentIds.has(d.id)) cleanupBatch.delete(d.ref);
     });
     expensesSnap.forEach((d) => cleanupBatch.delete(d.ref));
+    incomesSnap.forEach((d) => cleanupBatch.delete(d.ref));
     appsSnap.forEach((d) => cleanupBatch.delete(d.ref));
     maintenanceSnap.forEach((d) => cleanupBatch.delete(d.ref));
     historySnap.forEach((d) => cleanupBatch.delete(d.ref));
@@ -1035,45 +1039,142 @@ export async function markPaymentPaidInCloud(
 export async function updatePaymentDetailsInCloud(
   paymentId: string,
   payload: {
+    tenantName?: string;
+    month?: string;
+    invoiceNo?: string;
     amount: number;
     lateFee?: number;
+    status?: 'Lunas' | 'Belum Bayar';
+    paidDate?: string | null;
+    method?: PaymentMethod | null;
     notes?: string;
     paymentLinkId?: string;
   }
 ): Promise<void> {
   const cleanAmount = Math.min(50000000, Math.max(0, Number(payload.amount) || 0));
+  const cleanLateFee =
+    typeof payload.lateFee === 'number' && payload.lateFee > 0
+      ? Math.min(20000000, Math.max(0, payload.lateFee))
+      : 0;
+
   const updateData: Record<string, unknown> = {
     amount: cleanAmount,
     updatedAt: serverTimestamp(),
   };
-  if (typeof payload.lateFee === 'number' && payload.lateFee > 0) {
-    updateData.lateFee = Math.min(20000000, Math.max(0, payload.lateFee));
+
+  if (payload.tenantName !== undefined) {
+    const cleanName = payload.tenantName.trim().slice(0, 100);
+    if (cleanName.length >= 2) {
+      updateData.tenantName = cleanName;
+    }
+  }
+  if (payload.month && /^\d{4}-\d{2}$/.test(payload.month)) {
+    updateData.month = payload.month;
+  }
+  if (payload.invoiceNo?.trim() && payload.invoiceNo.trim().length >= 5) {
+    updateData.invoiceNo = payload.invoiceNo.trim().slice(0, 40);
+  }
+
+  if (cleanLateFee > 0) {
+    updateData.lateFee = cleanLateFee;
   } else {
     updateData.lateFee = deleteField();
   }
+
   if (payload.notes?.trim()) {
     updateData.notes = payload.notes.trim().slice(0, 300);
   } else {
     updateData.notes = deleteField();
   }
+
+  const nextStatus = payload.status;
+  let resolvedPaidDate: string | null | undefined = undefined;
+  let resolvedMethod: PaymentMethod | null | undefined = undefined;
+
+  if (nextStatus === 'Lunas') {
+    resolvedPaidDate =
+      payload.paidDate && payload.paidDate.trim().length >= 8
+        ? payload.paidDate.trim().slice(0, 20)
+        : getTodayISO();
+    resolvedMethod = payload.method ?? 'Transfer BCA';
+    updateData.status = 'Lunas';
+    updateData.paidDate = resolvedPaidDate;
+    updateData.method = resolvedMethod;
+    updateData.receiptGeneratedAt = new Date().toISOString().slice(0, 30);
+  } else if (nextStatus === 'Belum Bayar') {
+    resolvedPaidDate = null;
+    resolvedMethod = null;
+    updateData.status = 'Belum Bayar';
+    updateData.paidDate = null;
+    updateData.method = null;
+    updateData.receiptGeneratedAt = deleteField();
+  }
+
   try {
     const batch = writeBatch(db);
     batch.update(doc(db, 'payments', paymentId), updateData);
+
     if (payload.paymentLinkId) {
-      const linkPatch: Record<string, unknown> = {
-        amount: cleanAmount,
-        updatedAt: serverTimestamp(),
-      };
-      if (typeof payload.lateFee === 'number' && payload.lateFee > 0) {
-        linkPatch.lateFee = Math.min(20000000, Math.max(0, payload.lateFee));
-      } else {
-        linkPatch.lateFee = deleteField();
+      const linkRef = doc(db, 'paymentLinks', payload.paymentLinkId);
+      const linkSnap = await getDoc(linkRef);
+      if (linkSnap.exists()) {
+        const linkPatch: Record<string, unknown> = {
+          amount: cleanAmount,
+          updatedAt: serverTimestamp(),
+        };
+        if (updateData.tenantName) {
+          linkPatch.tenantName = updateData.tenantName;
+        }
+        if (updateData.month) {
+          linkPatch.month = updateData.month;
+        }
+        if (updateData.invoiceNo) {
+          linkPatch.invoiceNo = updateData.invoiceNo;
+        }
+        if (cleanLateFee > 0) {
+          linkPatch.lateFee = cleanLateFee;
+        } else {
+          linkPatch.lateFee = deleteField();
+        }
+        if (nextStatus === 'Lunas') {
+          linkPatch.status = 'Lunas';
+          linkPatch.paidDate = resolvedPaidDate ?? null;
+          linkPatch.method = resolvedMethod ?? 'Transfer BCA';
+        } else if (nextStatus === 'Belum Bayar') {
+          linkPatch.status = 'Belum Bayar';
+          linkPatch.paidDate = null;
+          linkPatch.method = null;
+          linkPatch.confirmationMethod = deleteField();
+          linkPatch.confirmationNote = deleteField();
+          linkPatch.confirmedAt = deleteField();
+        }
+        batch.update(linkRef, linkPatch);
       }
-      batch.update(doc(db, 'paymentLinks', payload.paymentLinkId), linkPatch);
     }
+
     await batch.commit();
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `payments/${paymentId}`);
+  }
+}
+
+export async function deletePaymentInCloud(
+  paymentId: string,
+  paymentLinkId?: string
+): Promise<void> {
+  try {
+    const batch = writeBatch(db);
+    batch.delete(doc(db, 'payments', paymentId));
+    if (paymentLinkId) {
+      const linkRef = doc(db, 'paymentLinks', paymentLinkId);
+      const linkSnap = await getDoc(linkRef);
+      if (linkSnap.exists()) {
+        batch.delete(linkRef);
+      }
+    }
+    await batch.commit();
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `payments/${paymentId}`);
   }
 }
 
@@ -1201,12 +1302,15 @@ export async function addExpenseInCloud(payload: {
   notes?: string;
 }): Promise<void> {
   const id = `exp-${Date.now()}`;
-  const month = payload.date.slice(0, 7) || getCurrentMonthISO();
+  const cleanTitle = payload.title.trim().slice(0, 160);
+  const cleanAmount = Math.min(100000000, Math.max(0, Number(payload.amount) || 0));
+  const cleanDate = payload.date.slice(0, 20) || getTodayISO();
+  const month = cleanDate.slice(0, 7) || getCurrentMonthISO();
   const docData: Record<string, unknown> = {
-    title: payload.title.trim().slice(0, 160),
+    title: cleanTitle.length >= 2 ? cleanTitle : 'Pengeluaran Kost',
     category: payload.category,
-    amount: payload.amount,
-    date: payload.date,
+    amount: cleanAmount,
+    date: cleanDate,
     month,
     createdAt: serverTimestamp(),
   };
@@ -1220,11 +1324,113 @@ export async function addExpenseInCloud(payload: {
   }
 }
 
+export async function updateExpenseInCloud(
+  id: string,
+  payload: {
+    title: string;
+    category: ExpenseCategory;
+    amount: number;
+    date: string;
+    notes?: string;
+  }
+): Promise<void> {
+  const cleanTitle = payload.title.trim().slice(0, 160);
+  const cleanAmount = Math.min(100000000, Math.max(0, Number(payload.amount) || 0));
+  const cleanDate = payload.date.slice(0, 20) || getTodayISO();
+  const month = cleanDate.slice(0, 7) || getCurrentMonthISO();
+  const updateData: Record<string, unknown> = {
+    title: cleanTitle.length >= 2 ? cleanTitle : 'Pengeluaran Kost',
+    category: payload.category,
+    amount: cleanAmount,
+    date: cleanDate,
+    month,
+    notes: payload.notes?.trim() ? payload.notes.trim().slice(0, 300) : deleteField(),
+  };
+  try {
+    await updateDoc(doc(db, 'expenses', id), updateData);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `expenses/${id}`);
+  }
+}
+
 export async function deleteExpenseInCloud(id: string): Promise<void> {
   try {
     await deleteDoc(doc(db, 'expenses', id));
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `expenses/${id}`);
+  }
+}
+
+export async function addIncomeInCloud(payload: {
+  title: string;
+  category: IncomeCategory;
+  amount: number;
+  date: string;
+  method?: PaymentMethod;
+  notes?: string;
+}): Promise<void> {
+  const id = `inc-${Date.now()}`;
+  const cleanTitle = payload.title.trim().slice(0, 160);
+  const cleanAmount = Math.min(100000000, Math.max(0, Number(payload.amount) || 0));
+  const cleanDate = payload.date.slice(0, 20) || getTodayISO();
+  const month = cleanDate.slice(0, 7) || getCurrentMonthISO();
+  const docData: Record<string, unknown> = {
+    title: cleanTitle.length >= 2 ? cleanTitle : 'Pemasukan Kost',
+    category: payload.category,
+    amount: cleanAmount,
+    date: cleanDate,
+    month,
+    createdAt: serverTimestamp(),
+  };
+  if (payload.method) {
+    docData.method = payload.method.slice(0, 40);
+  }
+  if (payload.notes?.trim()) {
+    docData.notes = payload.notes.trim().slice(0, 300);
+  }
+  try {
+    await setDoc(doc(db, 'incomes', id), docData);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, `incomes/${id}`);
+  }
+}
+
+export async function updateIncomeInCloud(
+  id: string,
+  payload: {
+    title: string;
+    category: IncomeCategory;
+    amount: number;
+    date: string;
+    method?: PaymentMethod;
+    notes?: string;
+  }
+): Promise<void> {
+  const cleanTitle = payload.title.trim().slice(0, 160);
+  const cleanAmount = Math.min(100000000, Math.max(0, Number(payload.amount) || 0));
+  const cleanDate = payload.date.slice(0, 20) || getTodayISO();
+  const month = cleanDate.slice(0, 7) || getCurrentMonthISO();
+  const updateData: Record<string, unknown> = {
+    title: cleanTitle.length >= 2 ? cleanTitle : 'Pemasukan Kost',
+    category: payload.category,
+    amount: cleanAmount,
+    date: cleanDate,
+    month,
+    method: payload.method ? payload.method.slice(0, 40) : deleteField(),
+    notes: payload.notes?.trim() ? payload.notes.trim().slice(0, 300) : deleteField(),
+  };
+  try {
+    await updateDoc(doc(db, 'incomes', id), updateData);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, `incomes/${id}`);
+  }
+}
+
+export async function deleteIncomeInCloud(id: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'incomes', id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, `incomes/${id}`);
   }
 }
 
@@ -1253,6 +1459,7 @@ export async function saveSettingsInCloud(updated: PropertySettings): Promise<vo
       paymentBankHolder: updated.paymentBankHolder.trim().slice(0, 80),
       qrisImageUrl: (updated.qrisImageUrl ?? '').trim().slice(0, 450000),
       externalPaymentLink: (updated.externalPaymentLink ?? '').trim().slice(0, 300),
+      publicAppUrl: normalizePublicBaseUrl(updated.publicAppUrl).slice(0, 200),
       defaultDueDay: updated.defaultDueDay,
       totalRooms: updated.totalRooms,
       updatedAt: serverTimestamp(),

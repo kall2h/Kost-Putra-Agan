@@ -27,13 +27,91 @@ export interface ResolvedRoomPaymentProfile {
   accountSummary: string;
 }
 
-export function buildShareablePaymentUrl(linkId?: string | null): string {
+const PUBLIC_APP_URL_STORAGE_KEY = 'kpa_public_app_url';
+let activePublicAppUrlCache = '';
+
+export function normalizePublicBaseUrl(raw?: string | null): string {
+  const trimmed = (raw ?? '').trim();
+  if (!trimmed) return '';
+  const withProtocol = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+  try {
+    const parsed = new URL(withProtocol);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return '';
+    }
+    return parsed.origin;
+  } catch {
+    return '';
+  }
+}
+
+export function setActivePublicAppUrl(raw?: string | null): void {
+  const normalized = normalizePublicBaseUrl(raw);
+  activePublicAppUrlCache = normalized;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      if (normalized) {
+        window.localStorage.setItem(PUBLIC_APP_URL_STORAGE_KEY, normalized);
+      } else {
+        window.localStorage.removeItem(PUBLIC_APP_URL_STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage access errors
+    }
+  }
+}
+
+export function getEffectivePublicBaseUrl(customBaseUrl?: string | null): string {
+  const fromArg = normalizePublicBaseUrl(customBaseUrl);
+  if (fromArg) return fromArg;
+
+  if (activePublicAppUrlCache) return activePublicAppUrlCache;
+
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const stored = normalizePublicBaseUrl(
+        window.localStorage.getItem(PUBLIC_APP_URL_STORAGE_KEY)
+      );
+      if (stored) {
+        activePublicAppUrlCache = stored;
+        return stored;
+      }
+    } catch {
+      // Ignore storage access errors
+    }
+  }
+
+  const fromEnv = normalizePublicBaseUrl(import.meta.env.VITE_PUBLIC_APP_URL);
+  if (fromEnv) return fromEnv;
+
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+  return '';
+}
+
+export function isPreviewHostOrigin(): boolean {
+  if (typeof window === 'undefined' || !window.location?.hostname) return false;
+  const host = window.location.hostname.toLowerCase();
+  return (
+    host === 'localhost' ||
+    host === '127.0.0.1' ||
+    host.endsWith('.run.app') ||
+    host.includes('aistudio')
+  );
+}
+
+export function buildShareablePaymentUrl(
+  linkId?: string | null,
+  customBaseUrl?: string | null
+): string {
   if (!linkId) return '';
-  const origin =
-    typeof window !== 'undefined' && window.location?.origin
-      ? window.location.origin
-      : '';
-  return origin ? `${origin}/?bayar=${encodeURIComponent(linkId)}` : `?bayar=${encodeURIComponent(linkId)}`;
+  const origin = getEffectivePublicBaseUrl(customBaseUrl);
+  return origin
+    ? `${origin}/?bayar=${encodeURIComponent(linkId)}`
+    : `?bayar=${encodeURIComponent(linkId)}`;
 }
 
 export function resolveRoomPaymentProfile(

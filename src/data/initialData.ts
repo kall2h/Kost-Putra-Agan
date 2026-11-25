@@ -69,6 +69,7 @@ export const DEFAULT_SETTINGS: PropertySettings = {
   paymentBankHolder: 'Azka Pratama',
   qrisImageUrl: '',
   externalPaymentLink: '',
+  publicAppUrl: '',
   adminName: 'Azka Pratama',
   adminInitials: 'AZ',
   totalRooms: 16,

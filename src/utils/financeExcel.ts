@@ -2,6 +2,7 @@ import ExcelJS from 'exceljs';
 import {
   ExpenseCategory,
   ExpenseRecord,
+  IncomeRecord,
   PaymentRecord,
   PropertySettings,
   Room,
@@ -14,6 +15,7 @@ export interface FinanceExcelExportParams {
   settings: PropertySettings;
   rooms: Room[];
   payments: PaymentRecord[];
+  incomes?: IncomeRecord[];
   expenses: ExpenseRecord[];
   categoryTotals: {
     category: ExpenseCategory;
@@ -102,6 +104,10 @@ const LABEL_CHIP_COLORS: Record<string, { fill: string; text: string }> = {
   'Transfer BCA': { fill: 'FFDBEAFE', text: 'FF1D4ED8' },
   'Transfer Mandiri': { fill: 'FFE0E7FF', text: 'FF3730A3' },
   Tunai: { fill: 'FFDCFCE7', text: 'FF047857' },
+  'Uang Kost': { fill: 'FFDCFCE7', text: 'FF065F46' },
+  Parkir: { fill: 'FFE0F2FE', text: 'FF0369A1' },
+  Laundry: { fill: 'FFCCFBF1', text: 'FF0F766E' },
+  Deposit: { fill: 'FFE0E7FF', text: 'FF3730A3' },
   Operasional: { fill: 'FFF1F5F9', text: 'FF475569' },
   Listrik: { fill: 'FFFEF3C7', text: 'FFB45309' },
   Air: { fill: 'FFE0F2FE', text: 'FF0369A1' },
@@ -213,6 +219,7 @@ export const exportFinanceExcelReport = async ({
   settings,
   rooms,
   payments,
+  incomes = [],
   expenses,
   categoryTotals,
   monthIncome,
@@ -225,6 +232,16 @@ export const exportFinanceExcelReport = async ({
   const monthPaidPayments = payments
     .filter((p) => p.month === selectedMonth && p.status === 'Lunas')
     .sort((a, b) => (a.paidDate || '').localeCompare(b.paidDate || ''));
+
+  const monthExtraIncomes = [...incomes]
+    .filter((i) => i.month === selectedMonth)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const rentIncomeTotal = monthPaidPayments.reduce(
+    (acc, p) => acc + p.amount + (p.lateFee ?? 0),
+    0
+  );
+  const extraIncomeTotal = monthExtraIncomes.reduce((acc, i) => acc + i.amount, 0);
 
   const monthPendingPayments = payments.filter(
     (p) => p.month === selectedMonth && p.status === 'Belum Bayar'
@@ -292,27 +309,41 @@ export const exportFinanceExcelReport = async ({
   const summaryData: [number, string, string, number, string][] = [
     [
       1,
-      'Total Pemasukan Sewa (Lunas)',
-      `${monthPaidPayments.length} pembayaran terverifikasi`,
-      monthIncome,
+      'Pemasukan Uang Kost (Sewa Lunas)',
+      `${monthPaidPayments.length} pembayaran sewa kamar`,
+      rentIncomeTotal,
       'FF047857',
     ],
     [
       2,
-      'Total Pengeluaran Operasional',
+      'Pemasukan Tambahan Kost',
+      `${monthExtraIncomes.length} catatan pemasukan lainnya`,
+      extraIncomeTotal,
+      'FF0F766E',
+    ],
+    [
+      3,
+      'Total Pemasukan Periode',
+      `${monthPaidPayments.length + monthExtraIncomes.length} transaksi masuk`,
+      monthIncome,
+      'FF047857',
+    ],
+    [
+      4,
+      'Total Pengeluaran Keperluan Kost',
       `${sortedExpenses.length} pos pengeluaran`,
       totalExpense,
       'FFB45309',
     ],
     [
-      3,
+      5,
       'Laba / Arus Kas Bersih',
       netProfit >= 0 ? 'Surplus periode berjalan' : 'Defisit periode berjalan',
       netProfit,
       netProfit >= 0 ? 'FF0F766E' : 'FFBE123C',
     ],
     [
-      4,
+      6,
       'Piutang / Tagihan Belum Bayar',
       `${monthPendingPayments.length} tagihan menunggu pelunasan`,
       totalPendingAmount,
@@ -323,7 +354,7 @@ export const exportFinanceExcelReport = async ({
   summaryData.forEach((item, idx) => {
     const row = reportSheet.getRow(cursorRow++);
     row.height = 22;
-    const isNetRow = item[0] === 3;
+    const isNetRow = item[0] === 5;
     const rowFill = isNetRow
       ? 'FFF0FDFA'
       : idx % 2 === 1
@@ -352,7 +383,7 @@ export const exportFinanceExcelReport = async ({
       c.font = {
         name: 'Calibri',
         size: 10,
-        bold: isNetRow || colI === 3,
+        bold: isNetRow || colI === 3 || item[0] === 3,
         color: { argb: colI === 3 ? item[4] : 'FF0F172A' },
       };
     });
@@ -361,58 +392,80 @@ export const exportFinanceExcelReport = async ({
   cursorRow += 1;
 
   // -------------------------------------------------------------------------
-  // TABEL 2: RINCIAN PEMASUKAN SEWA (LUNAS)
+  // TABEL 2: RINCIAN PEMASUKAN (UANG KOST & PEMASUKAN LAINNYA)
   // -------------------------------------------------------------------------
-  styleSectionTitleRow(reportSheet, cursorRow++, '2. TABEL PEMASUKAN SEWA KAMAR (LUNAS)', 9);
+  styleSectionTitleRow(reportSheet, cursorRow++, '2. TABEL PEMASUKAN (UANG KOST & TAMBAHAN)', 9);
   styleTableHeaderRow(
     reportSheet.getRow(cursorRow++),
     [
       'No',
-      'Tanggal Bayar',
-      'No. Invoice',
-      'Unit / Kamar',
-      'Nama Penyewa',
+      'Tanggal',
+      'No. Invoice / Ref',
+      'Unit / Kategori',
+      'Penyewa / Keterangan',
       'Metode Bayar',
-      'Sewa Pokok (Rp)',
+      'Pokok / Nominal (Rp)',
       'Denda (Rp)',
       'Total Diterima (Rp)',
     ],
     ['center', 'center', 'left', 'left', 'left', 'left', 'right', 'right', 'right']
   );
 
+  const combinedIncomeRows = [
+    ...monthPaidPayments.map((p) => {
+      const room = roomByNumber.get(p.roomNumber);
+      const unitLabel = room ? getRoomDisplayName(room) : `Kamar ${p.roomNumber}`;
+      return {
+        dateStr: p.paidDate || `${selectedMonth}-01`,
+        refNo: p.invoiceNo || '-',
+        unitOrCat: unitLabel,
+        desc: `Uang Kost · ${p.tenantName}`,
+        method: p.method || '-',
+        base: p.amount,
+        lateFee: p.lateFee ?? 0,
+      };
+    }),
+    ...monthExtraIncomes.map((inc, idx) => ({
+      dateStr: inc.date || `${selectedMonth}-01`,
+      refNo: `INC-${selectedMonth.replace('-', '')}-${String(idx + 1).padStart(3, '0')}`,
+      unitOrCat: inc.category,
+      desc: inc.title,
+      method: inc.method || '-',
+      base: inc.amount,
+      lateFee: 0,
+    })),
+  ].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+
   const incomeStartRow = cursorRow;
-  if (monthPaidPayments.length === 0) {
+  if (combinedIncomeRows.length === 0) {
     reportSheet.mergeCells(cursorRow, 1, cursorRow, 9);
     const emptyRow = reportSheet.getRow(cursorRow++);
     emptyRow.height = 22;
     const cell = emptyRow.getCell(1);
-    cell.value = `Belum ada pemasukan berstatus Lunas pada periode ${periodLabel}.`;
+    cell.value = `Belum ada pemasukan tercatat pada periode ${periodLabel}.`;
     cell.font = { name: 'Calibri', size: 10, italic: true, color: { argb: 'FF64748B' } };
     cell.alignment = { vertical: 'middle', horizontal: 'center' };
     for (let c = 1; c <= 9; c++) {
       emptyRow.getCell(c).border = CELL_BORDER;
     }
   } else {
-    monthPaidPayments.forEach((p, idx) => {
+    combinedIncomeRows.forEach((item, idx) => {
       const row = reportSheet.getRow(cursorRow++);
       row.height = 21;
-      const room = roomByNumber.get(p.roomNumber);
-      const unitLabel = room ? getRoomDisplayName(room) : `Kamar ${p.roomNumber}`;
-      const lateFee = p.lateFee ?? 0;
       const rowFill = idx % 2 === 1 ? 'FFF8FAFC' : 'FFFFFFFF';
 
       const values: (string | number | Date | ExcelJS.CellFormulaValue)[] = [
         idx + 1,
-        parseIsoDate(p.paidDate),
-        p.invoiceNo || '-',
-        unitLabel,
-        p.tenantName,
-        p.method || '-',
-        p.amount,
-        lateFee,
+        parseIsoDate(item.dateStr),
+        item.refNo,
+        item.unitOrCat,
+        item.desc,
+        item.method,
+        item.base,
+        item.lateFee,
         {
           formula: `G${row.number}+H${row.number}`,
-          result: p.amount + lateFee,
+          result: item.base + item.lateFee,
         },
       ];
 
@@ -451,11 +504,11 @@ export const exportFinanceExcelReport = async ({
     const totalIncomeRow = reportSheet.getRow(cursorRow++);
     totalIncomeRow.height = 24;
     reportSheet.mergeCells(totalIncomeRow.number, 1, totalIncomeRow.number, 6);
-    totalIncomeRow.getCell(1).value = `TOTAL PEMASUKAN (${monthPaidPayments.length} Transaksi)`;
+    totalIncomeRow.getCell(1).value = `TOTAL PEMASUKAN (${combinedIncomeRows.length} Transaksi)`;
     totalIncomeRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'right' };
 
-    const sumBase = monthPaidPayments.reduce((s, p) => s + p.amount, 0);
-    const sumFee = monthPaidPayments.reduce((s, p) => s + (p.lateFee ?? 0), 0);
+    const sumBase = combinedIncomeRows.reduce((s, r) => s + r.base, 0);
+    const sumFee = combinedIncomeRows.reduce((s, r) => s + r.lateFee, 0);
 
     totalIncomeRow.getCell(7).value = {
       formula: `SUM(G${incomeStartRow}:G${incomeEndRow})`,
@@ -762,13 +815,24 @@ export const exportFinanceExcelReport = async ({
         type: 'Pemasukan' as const,
         unitOrCategory: unitLabel,
         refNo: p.invoiceNo || '-',
-        description: `Sewa ${unitLabel} (${p.tenantName})`,
+        description: `Uang Kost ${unitLabel} (${p.tenantName})`,
         method: p.method || '-',
         income: p.amount + (p.lateFee ?? 0),
         expense: 0,
         notes: extra || '-',
       };
     }),
+    ...monthExtraIncomes.map((inc, idx) => ({
+      dateStr: inc.date || `${selectedMonth}-01`,
+      type: 'Pemasukan' as const,
+      unitOrCategory: inc.category,
+      refNo: `INC-${selectedMonth.replace('-', '')}-${String(idx + 1).padStart(3, '0')}`,
+      description: inc.title,
+      method: inc.method || '-',
+      income: inc.amount,
+      expense: 0,
+      notes: inc.notes?.trim() || '-',
+    })),
     ...sortedExpenses.map((e, idx) => ({
       dateStr: e.date || `${selectedMonth}-01`,
       type: 'Pengeluaran' as const,
@@ -921,6 +985,390 @@ export const exportFinanceExcelReport = async ({
   const link = document.createElement('a');
   link.href = url;
   link.setAttribute('download', `laporan-keuangan-kost-putra-agan-${selectedMonth}.xlsx`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+export interface AnnualMonthRow {
+  month: string;
+  label: string;
+  paidCount: number;
+  income: number;
+  expense: number;
+  net: number;
+}
+
+export interface AnnualFinanceExcelExportParams {
+  selectedYear: string;
+  settings: PropertySettings;
+  rooms: Room[];
+  payments: PaymentRecord[];
+  incomes?: IncomeRecord[];
+  expenses: ExpenseRecord[];
+  monthlyRows: AnnualMonthRow[];
+  categoryTotals: {
+    category: ExpenseCategory;
+    amount: number;
+    pct: number;
+  }[];
+  annualIncome: number;
+  annualExpense: number;
+  annualNetProfit: number;
+}
+
+export const exportAnnualFinanceExcelReport = async ({
+  selectedYear,
+  settings,
+  rooms,
+  payments,
+  incomes = [],
+  expenses,
+  monthlyRows,
+  categoryTotals,
+  annualIncome,
+  annualExpense,
+  annualNetProfit,
+}: AnnualFinanceExcelExportParams): Promise<void> => {
+  const roomByNumber = new Map(rooms.map((r) => [r.number, r]));
+  const yearPaidPayments = payments
+    .filter((p) => p.month.startsWith(`${selectedYear}-`) && p.status === 'Lunas')
+    .sort((a, b) => (a.paidDate || a.month).localeCompare(b.paidDate || b.month));
+  const yearExtraIncomes = [...incomes]
+    .filter((i) => i.month.startsWith(`${selectedYear}-`))
+    .sort((a, b) => a.date.localeCompare(b.date));
+  const yearPendingPayments = payments.filter(
+    (p) => p.month.startsWith(`${selectedYear}-`) && p.status === 'Belum Bayar'
+  );
+  const yearExpenses = expenses
+    .filter((e) => e.month.startsWith(`${selectedYear}-`))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = settings.adminName || 'Admin Kost Putra Agan';
+  workbook.created = new Date();
+
+  const propName = (settings.name || 'Kost Putra Agan').toUpperCase();
+
+  // Sheet 1: Ringkasan & Rekap 12 Bulan
+  const summarySheet = workbook.addWorksheet(`Rekap ${selectedYear}`, {
+    views: [{ state: 'frozen', ySplit: 4 }],
+  });
+
+  summarySheet.mergeCells('A1:F1');
+  const titleRow = summarySheet.getRow(1);
+  titleRow.height = 28;
+  titleRow.getCell(1).value = `REKAP KEUANGAN TAHUNAN ${selectedYear} - ${propName}`;
+  titleRow.getCell(1).font = { name: 'Calibri', size: 15, bold: true, color: { argb: 'FF0F766E' } };
+  titleRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+
+  summarySheet.mergeCells('A2:F2');
+  const subRow = summarySheet.getRow(2);
+  subRow.height = 20;
+  subRow.getCell(1).value = `Periode: Januari - Desember ${selectedYear} | Pengelola: ${
+    settings.adminName || 'Admin'
+  } | Dicetak: ${new Date().toLocaleDateString('id-ID')}`;
+  subRow.getCell(1).font = { name: 'Calibri', size: 10, color: { argb: 'FF64748B' } };
+  subRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'left' };
+
+  styleSectionTitleRow(summarySheet, 4, `1. RINGKASAN KEUANGAN TAHUN ${selectedYear}`, 6);
+  styleTableHeaderRow(
+    summarySheet.getRow(5),
+    ['No', 'Komponen Keuangan', 'Keterangan', 'Nominal (Rp)', 'Status', 'Catatan'],
+    ['center', 'left', 'left', 'right', 'center', 'left']
+  );
+
+  const kpiRows: [number, string, string, number, string, string][] = [
+    [1, 'Total Pemasukan Kost (Uang Kost & Tambahan)', `${yearPaidPayments.length} sewa + ${yearExtraIncomes.length} lainnya`, annualIncome, 'Terealisasi', 'Termasuk denda & pemasukan lain'],
+    [2, 'Total Pengeluaran Keperluan Kost', `${yearExpenses.length} transaksi`, annualExpense, 'Tercatat', 'Listrik, air, bahan, tagihan, lainnya'],
+    [3, `Laba Bersih Tahun ${selectedYear}`, annualNetProfit >= 0 ? 'Surplus Tahunan' : 'Defisit Tahunan', annualNetProfit, annualNetProfit >= 0 ? 'Surplus' : 'Defisit', `${yearPendingPayments.length} tagihan belum bayar di ${selectedYear}`],
+  ];
+
+  kpiRows.forEach((vals, idx) => {
+    const row = summarySheet.getRow(6 + idx);
+    row.height = 22;
+    const fillHex = idx === 2 ? 'FFF0FDFA' : idx % 2 === 1 ? 'FFF8FAFC' : 'FFFFFFFF';
+    vals.forEach((v, cIdx) => {
+      const cell = row.getCell(cIdx + 1);
+      cell.value = v;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillHex } };
+      cell.border = idx === 2 ? TOTAL_BORDER : CELL_BORDER;
+      cell.font = {
+        name: 'Calibri',
+        size: 10,
+        bold: idx === 2 || cIdx === 3,
+        color: { argb: idx === 2 ? 'FF0F766E' : 'FF0F172A' },
+      };
+      if (cIdx === 0 || cIdx === 4) {
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      } else if (cIdx === 3) {
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        cell.numFmt = CURRENCY_FORMAT;
+      } else {
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+      }
+    });
+  });
+
+  styleSectionTitleRow(summarySheet, 10, `2. REKAPITULASI PER BULAN (${selectedYear})`, 6);
+  styleTableHeaderRow(
+    summarySheet.getRow(11),
+    ['No', 'Bulan', 'Transaksi Lunas', 'Pemasukan (Rp)', 'Pengeluaran (Rp)', 'Laba Bersih (Rp)'],
+    ['center', 'left', 'center', 'right', 'right', 'right']
+  );
+
+  monthlyRows.forEach((mRow, idx) => {
+    const row = summarySheet.getRow(12 + idx);
+    row.height = 21;
+    const fillHex = idx % 2 === 1 ? 'FFF8FAFC' : 'FFFFFFFF';
+    const vals: (string | number | ExcelJS.CellFormulaValue)[] = [
+      idx + 1,
+      formatMonthYear(mRow.month),
+      mRow.paidCount,
+      mRow.income,
+      mRow.expense,
+      { formula: `D${row.number}-E${row.number}`, result: mRow.net },
+    ];
+    vals.forEach((v, cIdx) => {
+      const cell = row.getCell(cIdx + 1);
+      cell.value = v;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillHex } };
+      cell.border = CELL_BORDER;
+      cell.font = {
+        name: 'Calibri',
+        size: 10,
+        bold: cIdx === 5,
+        color: { argb: cIdx === 5 && mRow.net < 0 ? 'FFBE123C' : 'FF0F172A' },
+      };
+      if (cIdx === 0 || cIdx === 2) {
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      } else if (cIdx >= 3) {
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        cell.numFmt = CURRENCY_FORMAT;
+      } else {
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+      }
+    });
+  });
+
+  const mTotalRow = summarySheet.getRow(24);
+  mTotalRow.height = 24;
+  summarySheet.mergeCells(24, 1, 24, 2);
+  mTotalRow.getCell(1).value = `TOTAL TAHUN ${selectedYear}`;
+  mTotalRow.getCell(1).alignment = { vertical: 'middle', horizontal: 'right' };
+  mTotalRow.getCell(3).value = { formula: 'SUM(C12:C23)', result: yearPaidPayments.length };
+  mTotalRow.getCell(4).value = { formula: 'SUM(D12:D23)', result: annualIncome };
+  mTotalRow.getCell(5).value = { formula: 'SUM(E12:E23)', result: annualExpense };
+  mTotalRow.getCell(6).value = { formula: 'D24-E24', result: annualNetProfit };
+  for (let c = 1; c <= 6; c++) {
+    const cell = mTotalRow.getCell(c);
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDFA' } };
+    cell.border = TOTAL_BORDER;
+    cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FF0F766E' } };
+    if (c === 3) {
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+    } else if (c >= 4) {
+      cell.alignment = { vertical: 'middle', horizontal: 'right' };
+      cell.numFmt = CURRENCY_FORMAT;
+    }
+  }
+
+  styleSectionTitleRow(summarySheet, 26, `3. REKAP PENGELUARAN PER KATEGORI (${selectedYear})`, 6);
+  styleTableHeaderRow(
+    summarySheet.getRow(27),
+    ['No', 'Kategori Biaya', 'Porsi (%)', 'Total Kategori (Rp)', 'Keterangan', 'Tahun'],
+    ['center', 'left', 'center', 'right', 'left', 'center']
+  );
+
+  categoryTotals.forEach((cat, idx) => {
+    const row = summarySheet.getRow(28 + idx);
+    row.height = 21;
+    const fillHex = idx % 2 === 1 ? 'FFF8FAFC' : 'FFFFFFFF';
+    const vals: (string | number)[] = [
+      idx + 1,
+      cat.category,
+      `${cat.pct}%`,
+      cat.amount,
+      cat.amount > 0 ? 'Tercatat di buku kas tahunan' : 'Belum ada pengeluaran',
+      selectedYear,
+    ];
+    vals.forEach((v, cIdx) => {
+      const cell = row.getCell(cIdx + 1);
+      cell.value = v;
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fillHex } };
+      cell.border = CELL_BORDER;
+      cell.font = { name: 'Calibri', size: 10, color: { argb: 'FF0F172A' } };
+      if (cIdx === 0 || cIdx === 2 || cIdx === 5) {
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      } else if (cIdx === 3) {
+        cell.alignment = { vertical: 'middle', horizontal: 'right' };
+        cell.numFmt = CURRENCY_FORMAT;
+      } else {
+        cell.alignment = { vertical: 'middle', horizontal: 'left' };
+      }
+    });
+  });
+
+  autoFitColumns(summarySheet, 6, {
+    minWidths: { 1: 6, 2: 24, 3: 18, 4: 20, 5: 20, 6: 24 },
+    maxWidth: 40,
+  });
+
+  // Sheet 2: Rincian Pemasukan Tahunan
+  const incomeSheet = workbook.addWorksheet('Pemasukan Tahunan', {
+    views: [{ state: 'frozen', ySplit: 4 }],
+  });
+  incomeSheet.mergeCells('A1:J1');
+  incomeSheet.getRow(1).height = 26;
+  incomeSheet.getRow(1).getCell(1).value = `RINCIAN PEMASUKAN KOST TAHUN ${selectedYear} - ${propName}`;
+  incomeSheet.getRow(1).getCell(1).font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FF0F766E' } };
+  styleTableHeaderRow(
+    incomeSheet.getRow(4),
+    ['No', 'Periode', 'Tgl Bayar', 'No. Invoice / Ref', 'Unit / Kategori', 'Penyewa / Keterangan', 'Metode', 'Nominal (Rp)', 'Denda (Rp)', 'Total (Rp)'],
+    ['center', 'center', 'center', 'left', 'left', 'left', 'center', 'right', 'right', 'right']
+  );
+
+  const combinedYearIncomeRows = [
+    ...yearPaidPayments.map((p) => {
+      const room = roomByNumber.get(p.roomNumber);
+      const unitLabel = room ? getRoomDisplayName(room) : `Kamar ${p.roomNumber}`;
+      return {
+        month: p.month,
+        dateStr: p.paidDate || `${p.month}-01`,
+        refNo: p.invoiceNo || '-',
+        unitOrCat: unitLabel,
+        desc: `Uang Kost · ${p.tenantName}`,
+        method: p.method || '-',
+        base: p.amount,
+        lateFee: p.lateFee ?? 0,
+      };
+    }),
+    ...yearExtraIncomes.map((inc, idx) => ({
+      month: inc.month,
+      dateStr: inc.date || `${inc.month}-01`,
+      refNo: `INC-${inc.month.replace('-', '')}-${String(idx + 1).padStart(3, '0')}`,
+      unitOrCat: inc.category,
+      desc: inc.title,
+      method: inc.method || '-',
+      base: inc.amount,
+      lateFee: 0,
+    })),
+  ].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+
+  let incRowIdx = 5;
+  if (combinedYearIncomeRows.length === 0) {
+    incomeSheet.mergeCells(5, 1, 5, 10);
+    const emptyR = incomeSheet.getRow(5);
+    emptyR.height = 22;
+    emptyR.getCell(1).value = `Belum ada pemasukan tercatat di tahun ${selectedYear}.`;
+    emptyR.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  } else {
+    combinedYearIncomeRows.forEach((item, idx) => {
+      const row = incomeSheet.getRow(incRowIdx++);
+      row.height = 21;
+      const vals: (string | number | Date | ExcelJS.CellFormulaValue)[] = [
+        idx + 1,
+        formatMonthYear(item.month),
+        parseIsoDate(item.dateStr),
+        item.refNo,
+        item.unitOrCat,
+        item.desc,
+        item.method,
+        item.base,
+        item.lateFee,
+        { formula: `H${row.number}+I${row.number}`, result: item.base + item.lateFee },
+      ];
+      vals.forEach((v, cIdx) => {
+        const cell = row.getCell(cIdx + 1);
+        cell.value = v;
+        cell.border = CELL_BORDER;
+        cell.font = { name: 'Calibri', size: 10, bold: cIdx === 9, color: { argb: 'FF0F172A' } };
+        if (cIdx <= 1 || cIdx === 6) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else if (cIdx === 2) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          if (v instanceof Date) cell.numFmt = DATE_FORMAT;
+        } else if (cIdx >= 7) {
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.numFmt = CURRENCY_FORMAT;
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: 'left' };
+        }
+      });
+    });
+  }
+  autoFitColumns(incomeSheet, 10, {
+    minWidths: { 1: 6, 2: 16, 3: 14, 4: 20, 5: 16, 6: 22, 7: 16, 8: 16, 9: 15, 10: 18 },
+    maxWidth: 38,
+  });
+
+  // Sheet 3: Rincian Pengeluaran Tahunan
+  const expSheet = workbook.addWorksheet('Pengeluaran Tahunan', {
+    views: [{ state: 'frozen', ySplit: 4 }],
+  });
+  expSheet.mergeCells('A1:G1');
+  expSheet.getRow(1).height = 26;
+  expSheet.getRow(1).getCell(1).value = `BUKU KAS PENGELUARAN TAHUN ${selectedYear} - ${propName}`;
+  expSheet.getRow(1).getCell(1).font = { name: 'Calibri', size: 13, bold: true, color: { argb: 'FF0F766E' } };
+  styleTableHeaderRow(
+    expSheet.getRow(4),
+    ['No', 'Bulan', 'Tanggal', 'Kategori', 'Keperluan', 'Catatan', 'Nominal (Rp)'],
+    ['center', 'center', 'center', 'center', 'left', 'left', 'right']
+  );
+
+  let expRowIdx = 5;
+  if (yearExpenses.length === 0) {
+    expSheet.mergeCells(5, 1, 5, 7);
+    const emptyR = expSheet.getRow(5);
+    emptyR.height = 22;
+    emptyR.getCell(1).value = `Belum ada pengeluaran tercatat di tahun ${selectedYear}.`;
+    emptyR.getCell(1).alignment = { vertical: 'middle', horizontal: 'center' };
+  } else {
+    yearExpenses.forEach((e, idx) => {
+      const row = expSheet.getRow(expRowIdx++);
+      row.height = 21;
+      const vals: (string | number | Date)[] = [
+        idx + 1,
+        formatMonthYear(e.month),
+        parseIsoDate(e.date),
+        e.category,
+        e.title,
+        e.notes?.trim() || '-',
+        e.amount,
+      ];
+      vals.forEach((v, cIdx) => {
+        const cell = row.getCell(cIdx + 1);
+        cell.value = v;
+        cell.border = CELL_BORDER;
+        cell.font = { name: 'Calibri', size: 10, bold: cIdx === 6, color: { argb: 'FF0F172A' } };
+        if (cIdx <= 1 || cIdx === 3) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        } else if (cIdx === 2) {
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          if (v instanceof Date) cell.numFmt = DATE_FORMAT;
+        } else if (cIdx === 6) {
+          cell.alignment = { vertical: 'middle', horizontal: 'right' };
+          cell.numFmt = CURRENCY_FORMAT;
+        } else {
+          cell.alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
+        }
+      });
+    });
+  }
+  autoFitColumns(expSheet, 7, {
+    minWidths: { 1: 6, 2: 16, 3: 14, 4: 14, 5: 30, 6: 24, 7: 18 },
+    maxWidth: 44,
+  });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `rekap-tahunan-kost-putra-agan-${selectedYear}.xlsx`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

@@ -6,6 +6,7 @@ import {
   Clock3,
   Copy,
   ExternalLink,
+  Globe,
   Landmark,
   Link2,
   QrCode,
@@ -34,6 +35,9 @@ import {
 } from '../utils/messageTemplates';
 import {
   buildShareablePaymentUrl,
+  getEffectivePublicBaseUrl,
+  isPreviewHostOrigin,
+  normalizePublicBaseUrl,
   resolveRoomPaymentProfile,
 } from '../utils/receiptPdf';
 import { CurrencyInput } from './CurrencyInput';
@@ -60,6 +64,7 @@ interface PaymentLinkModalProps {
     preferredMethod: PaymentMethod;
     externalPaymentLink?: string;
   }) => Promise<{ payment: PaymentRecord; linkId: string }>;
+  onSavePublicAppUrl?: (url: string) => Promise<void>;
   onMarkPaid: (paymentId: string) => Promise<void> | void;
   onNotify: (msg: string) => void;
 }
@@ -77,6 +82,7 @@ export const PaymentLinkModal: React.FC<PaymentLinkModalProps> = ({
   templates,
   onClose,
   onCreateOrUpdateLink,
+  onSavePublicAppUrl,
   onMarkPaid,
   onNotify,
 }) => {
@@ -137,6 +143,9 @@ export const PaymentLinkModal: React.FC<PaymentLinkModalProps> = ({
   } | null>(null);
   const [copiedUrl, setCopiedUrl] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState('');
+  const [editingDomain, setEditingDomain] = useState(false);
+  const [domainInput, setDomainInput] = useState('');
+  const [savingDomain, setSavingDomain] = useState(false);
 
   // Reset form when modal opens or initial target changes
   useEffect(() => {
@@ -149,7 +158,11 @@ export const PaymentLinkModal: React.FC<PaymentLinkModalProps> = ({
     setSelectedRoomNumber(defaultRoomNo);
     setCreatedResult(null);
     setCopiedUrl(false);
-  }, [open, initialPayment, initialRoom, selectableTargets]);
+    setDomainInput(settings.publicAppUrl ?? '');
+    setEditingDomain(
+      isPreviewHostOrigin() && !normalizePublicBaseUrl(settings.publicAppUrl)
+    );
+  }, [open, initialPayment, initialRoom, selectableTargets, settings.publicAppUrl]);
 
   const activeTarget = useMemo(
     () =>
@@ -193,8 +206,14 @@ export const PaymentLinkModal: React.FC<PaymentLinkModalProps> = ({
     currentPayment?.paymentLinkId ||
     '';
 
+  const effectiveBaseUrl = getEffectivePublicBaseUrl(settings.publicAppUrl);
+  const previewOriginDetected =
+    isPreviewHostOrigin() && !normalizePublicBaseUrl(settings.publicAppUrl);
+
   const liveLinkRecord = activeLinkId ? paymentLinksById[activeLinkId] : undefined;
-  const shareUrl = activeLinkId ? buildShareablePaymentUrl(activeLinkId) : '';
+  const shareUrl = activeLinkId
+    ? buildShareablePaymentUrl(activeLinkId, settings.publicAppUrl)
+    : '';
 
   useEffect(() => {
     if (!open || !shareUrl) {
@@ -305,7 +324,7 @@ export const PaymentLinkModal: React.FC<PaymentLinkModalProps> = ({
         externalPaymentLink: externalLink.trim() || undefined,
       });
       setCreatedResult(res);
-      const url = buildShareablePaymentUrl(res.linkId);
+      const url = buildShareablePaymentUrl(res.linkId, settings.publicAppUrl);
       try {
         await navigator.clipboard.writeText(url);
         setCopiedUrl(true);
@@ -351,6 +370,17 @@ export const PaymentLinkModal: React.FC<PaymentLinkModalProps> = ({
       onClose();
     } finally {
       setVerifying(false);
+    }
+  };
+
+  const handleSaveDomain = async () => {
+    if (!onSavePublicAppUrl) return;
+    setSavingDomain(true);
+    try {
+      await onSavePublicAppUrl(domainInput);
+      setEditingDomain(false);
+    } finally {
+      setSavingDomain(false);
     }
   };
 
@@ -592,6 +622,76 @@ export const PaymentLinkModal: React.FC<PaymentLinkModalProps> = ({
 
             {/* Right Preview & Share Panel */}
             <div className="lg:col-span-5 p-6 bg-slate-50/70 dark:bg-white/[0.02] flex flex-col justify-between gap-5">
+              {/* Domain Vercel Configuration Bar */}
+              <div
+                className={`rounded-xl border p-3.5 space-y-2.5 ${
+                  previewOriginDetected
+                    ? 'bg-amber-50/80 dark:bg-amber-500/10 border-amber-300/80 dark:border-amber-400/30'
+                    : 'bg-white dark:bg-[#0d181c] border-slate-200/80 dark:border-white/[0.08]'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Globe
+                      className={`w-3.5 h-3.5 shrink-0 ${
+                        previewOriginDetected
+                          ? 'text-amber-700 dark:text-amber-300'
+                          : 'text-teal-600 dark:text-teal-400'
+                      }`}
+                      aria-hidden="true"
+                    />
+                    <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">
+                      {previewOriginDetected
+                        ? 'Link Masih Mengarah ke Preview AI Studio'
+                        : 'Domain Tujuan Link'}
+                    </span>
+                  </div>
+                  {onSavePublicAppUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingDomain((v) => !v)}
+                      className="text-[11px] font-medium text-teal-700 dark:text-teal-300 hover:underline shrink-0"
+                    >
+                      {editingDomain ? 'Tutup' : 'Ubah Domain'}
+                    </button>
+                  )}
+                </div>
+
+                {!editingDomain ? (
+                  <p className="font-mono-num text-[11px] text-slate-600 dark:text-slate-300 truncate">
+                    {effectiveBaseUrl || '-'}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="pl-vercel-domain-input"
+                      className="block text-[11px] text-slate-600 dark:text-slate-300 leading-snug"
+                    >
+                      Masukkan URL website Vercel Anda agar link tidak mengarah ke AI Studio:
+                    </label>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        id="pl-vercel-domain-input"
+                        type="url"
+                        maxLength={200}
+                        placeholder="https://nama-web-anda.vercel.app"
+                        value={domainInput}
+                        onChange={(e) => setDomainInput(e.target.value)}
+                        className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg input-surface border text-xs"
+                      />
+                      <button
+                        type="button"
+                        disabled={savingDomain}
+                        onClick={handleSaveDomain}
+                        className="px-3 py-1.5 rounded-lg btn-primary text-xs font-medium shrink-0 disabled:opacity-50"
+                      >
+                        {savingDomain ? 'Simpan...' : 'Simpan'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {shareUrl ? (
                 <>
                   <div className="space-y-4">

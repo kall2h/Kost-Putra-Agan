@@ -832,6 +832,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </div>
               </div>
 
+              <div>
+                <label
+                  htmlFor="prop-public-url"
+                  className="block text-xs font-medium text-slate-600 dark:text-slate-300 mb-1"
+                >
+                  Domain Website Publik / Vercel (untuk Link Pembayaran)
+                </label>
+                <input
+                  id="prop-public-url"
+                  type="url"
+                  maxLength={200}
+                  placeholder="https://kost-putra-agan.vercel.app"
+                  value={form.publicAppUrl ?? ''}
+                  onChange={(e) =>
+                    setForm({ ...form, publicAppUrl: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded-lg input-surface border text-xs sm:text-sm"
+                />
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                  Isi dengan alamat website Vercel Anda agar setiap Link Pembayaran dan QR Kwitansi otomatis mengarah ke Vercel, meskipun dibuat dari preview atau localhost.
+                </p>
+              </div>
+
               {/* QRIS Upload */}
               <div className="space-y-2.5 pt-1">
                 <div className="flex flex-wrap items-center justify-between gap-2">

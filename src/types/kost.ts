@@ -171,6 +171,19 @@ export interface ExpenseRecord {
   notes?: string;
 }
 
+export type IncomeCategory = 'Uang Kost' | 'Parkir' | 'Laundry' | 'Deposit' | 'Lainnya';
+
+export interface IncomeRecord {
+  id: string;
+  title: string;
+  category: IncomeCategory;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  month: string; // '2026-11'
+  method?: PaymentMethod;
+  notes?: string;
+}
+
 export interface MonthlyHistoricalSummary {
   month: string; // '2026-06'
   label: string; // 'Jun'
@@ -198,6 +211,7 @@ export interface PropertySettings {
   paymentBankHolder: string;
   qrisImageUrl: string;
   externalPaymentLink: string;
+  publicAppUrl?: string;
   adminName: string;
   adminInitials: string;
   totalRooms: number;

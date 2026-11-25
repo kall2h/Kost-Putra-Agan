@@ -1,5 +1,6 @@
 import {
   ExpenseRecord,
+  IncomeRecord,
   MessageTemplate,
   PaymentRecord,
   PropertySettings,
@@ -200,26 +201,34 @@ export function buildMonthlyFinanceWhatsAppSummary(params: {
   rooms: Room[];
   payments: PaymentRecord[];
   expenses: ExpenseRecord[];
+  incomes?: IncomeRecord[];
 }): string {
-  const { settings, month, rooms, payments, expenses } = params;
+  const { settings, month, rooms, payments, expenses, incomes = [] } = params;
   const monthPayments = payments.filter((p) => p.month === month);
   const paid = monthPayments.filter((p) => p.status === 'Lunas');
   const unpaid = monthPayments.filter((p) => p.status === 'Belum Bayar');
+  const monthIncomes = incomes.filter((i) => i.month === month);
   const monthExpenses = expenses.filter((e) => e.month === month);
 
-  const totalIncome = paid.reduce((acc, p) => acc + p.amount + (p.lateFee ?? 0), 0);
+  const rentIncome = paid.reduce((acc, p) => acc + p.amount + (p.lateFee ?? 0), 0);
+  const extraIncome = monthIncomes.reduce((acc, i) => acc + i.amount, 0);
+  const totalIncome = rentIncome + extraIncome;
   const totalExpense = monthExpenses.reduce((acc, e) => acc + e.amount, 0);
   const netProfit = totalIncome - totalExpense;
   const occupiedCount = rooms.filter((r) => r.status === 'Terisi').length;
   const vacantRooms = rooms.filter((r) => r.status === 'Tersedia');
 
   const lines = [
-    `*LAPORAN BULANAN — ${settings.name.toUpperCase()}*`,
+    `*LAPORAN BULANAN - ${settings.name.toUpperCase()}*`,
     `Periode: *${formatMonthYear(month)}*`,
     ``,
     `*1. Ringkasan Keuangan*`,
-    `• Pemasukan Sewa Lunas (${paid.length} unit): ${formatIDR(totalIncome)}`,
-    `• Pengeluaran Operasional (${monthExpenses.length} item): ${formatIDR(totalExpense)}`,
+    `• Pemasukan Uang Kost (${paid.length} unit): ${formatIDR(rentIncome)}`,
+    ...(extraIncome > 0 || monthIncomes.length > 0
+      ? [`• Pemasukan Tambahan (${monthIncomes.length} item): ${formatIDR(extraIncome)}`]
+      : []),
+    `• Total Pemasukan: ${formatIDR(totalIncome)}`,
+    `• Pengeluaran Keperluan Kost (${monthExpenses.length} item): ${formatIDR(totalExpense)}`,
     `• *Laba Bersih: ${formatIDR(netProfit)}*`,
     ``,
     `*2. Okupansi Kamar*`,
@@ -246,5 +255,78 @@ export function buildMonthlyFinanceWhatsAppSummary(params: {
 
   lines.push(``);
   lines.push(`Dilaporkan oleh: ${settings.adminName}`);
+  return lines.join('\n');
+}
+
+export function buildAnnualFinanceWhatsAppSummary(params: {
+  settings: PropertySettings;
+  year: string;
+  rooms: Room[];
+  payments: PaymentRecord[];
+  expenses: ExpenseRecord[];
+  incomes?: IncomeRecord[];
+}): string {
+  const { settings, year, rooms, payments, expenses, incomes = [] } = params;
+  const yearPayments = payments.filter((p) => p.month.startsWith(`${year}-`));
+  const paid = yearPayments.filter((p) => p.status === 'Lunas');
+  const unpaid = yearPayments.filter((p) => p.status === 'Belum Bayar');
+  const yearIncomes = incomes.filter((i) => i.month.startsWith(`${year}-`));
+  const yearExpenses = expenses.filter((e) => e.month.startsWith(`${year}-`));
+
+  const rentIncome = paid.reduce((acc, p) => acc + p.amount + (p.lateFee ?? 0), 0);
+  const extraIncome = yearIncomes.reduce((acc, i) => acc + i.amount, 0);
+  const totalIncome = rentIncome + extraIncome;
+  const totalExpense = yearExpenses.reduce((acc, e) => acc + e.amount, 0);
+  const netProfit = totalIncome - totalExpense;
+  const occupiedCount = rooms.filter((r) => r.status === 'Terisi').length;
+
+  const monthlyLines: string[] = [];
+  for (let m = 1; m <= 12; m++) {
+    const mm = String(m).padStart(2, '0');
+    const ym = `${year}-${mm}`;
+    const inc =
+      paid
+        .filter((p) => p.month === ym)
+        .reduce((acc, p) => acc + p.amount + (p.lateFee ?? 0), 0) +
+      yearIncomes
+        .filter((i) => i.month === ym)
+        .reduce((acc, i) => acc + i.amount, 0);
+    const exp = yearExpenses
+      .filter((e) => e.month === ym)
+      .reduce((acc, e) => acc + e.amount, 0);
+    if (inc > 0 || exp > 0) {
+      monthlyLines.push(
+        `• ${formatMonthYear(ym)}: Masuk ${formatIDR(inc)} | Keluar ${formatIDR(exp)} | Bersih ${formatIDR(inc - exp)}`
+      );
+    }
+  }
+
+  const lines = [
+    `*REKAP KEUANGAN TAHUNAN ${year} - ${settings.name.toUpperCase()}*`,
+    `Periode: *Januari - Desember ${year}*`,
+    ``,
+    `*1. Ringkasan Keuangan Tahun ${year}*`,
+    `• Pemasukan Uang Kost (${paid.length} sewa lunas): ${formatIDR(rentIncome)}`,
+    ...(extraIncome > 0 || yearIncomes.length > 0
+      ? [`• Pemasukan Tambahan (${yearIncomes.length} item): ${formatIDR(extraIncome)}`]
+      : []),
+    `• Total Pemasukan: ${formatIDR(totalIncome)}`,
+    `• Total Pengeluaran Keperluan Kost (${yearExpenses.length} item): ${formatIDR(totalExpense)}`,
+    `• *Laba Bersih Tahunan: ${formatIDR(netProfit)}*`,
+    `• Tagihan Belum Lunas di ${year}: ${unpaid.length} tagihan`,
+    ``,
+    `*2. Okupansi Kamar Saat Ini*`,
+    `• Terisi: ${occupiedCount} dari ${rooms.length} unit (${
+      rooms.length > 0 ? Math.round((occupiedCount / rooms.length) * 100) : 0
+    }%)`,
+    ``,
+    `*3. Rincian Per Bulan (${year})*`,
+    ...(monthlyLines.length > 0
+      ? monthlyLines
+      : ['• Belum ada transaksi tercatat di tahun ini.']),
+    ``,
+    `Dilaporkan oleh: ${settings.adminName}`,
+  ];
+
   return lines.join('\n');
 }

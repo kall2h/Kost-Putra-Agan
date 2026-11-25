@@ -13,10 +13,12 @@ import {
   FileText,
   Clock3,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import {
   MessageTemplate,
   PaymentLinkRecord,
+  PaymentMethod,
   PaymentRecord,
   PaymentStatus,
   PropertySettings,
@@ -25,12 +27,14 @@ import {
 } from '../types/kost';
 import { getRoomDisplayName } from '../data/initialData';
 import {
+  buildInvoiceNumber,
   buildWhatsAppUrl,
   formatDateID,
   formatIDR,
   formatMonthYear,
   getDueStatusInfo,
   getNextMonthISO,
+  getTodayISO,
 } from '../utils/format';
 import {
   DEFAULT_MESSAGE_TEMPLATES,
@@ -38,6 +42,19 @@ import {
 } from '../utils/messageTemplates';
 import { buildShareablePaymentUrl } from '../utils/receiptPdf';
 import { CurrencyInput } from './CurrencyInput';
+import { MonthCalendarPicker } from './MonthCalendarPicker';
+
+export interface PaymentUpdatePayload {
+  tenantName: string;
+  month: string;
+  invoiceNo: string;
+  amount: number;
+  lateFee?: number;
+  status: PaymentStatus;
+  paidDate: string | null;
+  method: PaymentMethod | null;
+  notes?: string;
+}
 
 interface PaymentsViewProps {
   payments: PaymentRecord[];
@@ -65,9 +82,17 @@ interface PaymentsViewProps {
   onGenerateMonthlyBills: (month: string) => Promise<void>;
   onUpdatePaymentDetails: (
     paymentId: string,
-    payload: { amount: number; lateFee?: number; notes?: string }
+    payload: PaymentUpdatePayload
   ) => Promise<void>;
+  onDeletePayment: (paymentId: string) => Promise<void>;
 }
+
+const PAYMENT_METHODS: PaymentMethod[] = [
+  'Transfer BCA',
+  'QRIS',
+  'Transfer Mandiri',
+  'Tunai',
+];
 
 export const PaymentsView: React.FC<PaymentsViewProps> = ({
   payments,
@@ -87,6 +112,7 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
   onDownloadPdfReceipt,
   onGenerateMonthlyBills,
   onUpdatePaymentDetails,
+  onDeletePayment,
 }) => {
   const [statusFilter, setStatusFilter] = useState<'all' | PaymentStatus>('all');
   const [search, setSearch] = useState('');
@@ -97,20 +123,28 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
   const [generating, setGenerating] = useState(false);
 
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const [editTenantName, setEditTenantName] = useState('');
+  const [editMonth, setEditMonth] = useState(selectedMonth);
   const [editAmount, setEditAmount] = useState(0);
   const [editLateFee, setEditLateFee] = useState(0);
+  const [editStatus, setEditStatus] = useState<PaymentStatus>('Belum Bayar');
+  const [editPaidDate, setEditPaidDate] = useState('');
+  const [editMethod, setEditMethod] = useState<PaymentMethod>('Transfer BCA');
   const [editNotes, setEditNotes] = useState('');
+  const [editError, setEditError] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  const [deletingTarget, setDeletingTarget] = useState<PaymentRecord | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
 
   const activeTemplates =
     templates.length > 0 ? templates : DEFAULT_MESSAGE_TEMPLATES;
 
-  const monthOptions = useMemo(() => {
-    const set = new Set(payments.map((p) => p.month));
-    set.add(selectedMonth);
-    const months = Array.from(set).sort().reverse();
-    return months.length > 0 ? months : ['2026-11', '2026-10'];
-  }, [payments, selectedMonth]);
+  const activePaymentMonths = useMemo(() => {
+    const set = new Set<string>();
+    payments.forEach((p) => set.add(p.month));
+    return set;
+  }, [payments]);
 
   const monthPayments = useMemo(
     () => payments.filter((p) => p.month === selectedMonth),
@@ -184,22 +218,65 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
 
   const startEditPayment = (pay: PaymentRecord) => {
     setEditingPaymentId(pay.id);
+    setEditTenantName(pay.tenantName);
+    setEditMonth(pay.month);
     setEditAmount(pay.amount);
     setEditLateFee(pay.lateFee ?? 0);
+    setEditStatus(pay.status);
+    setEditPaidDate(pay.paidDate || getTodayISO());
+    setEditMethod(pay.method ?? 'Transfer BCA');
     setEditNotes(pay.notes ?? '');
+    setEditError('');
   };
 
-  const handleSavePaymentEdit = async (paymentId: string) => {
+  const handleSavePaymentEdit = async (pay: PaymentRecord) => {
+    const cleanName = editTenantName.trim();
+    if (cleanName.length < 2) {
+      setEditError('Nama penyewa minimal 2 karakter.');
+      return;
+    }
+    if (!/^\d{4}-\d{2}$/.test(editMonth)) {
+      setEditError('Pilih periode bulan yang valid.');
+      return;
+    }
+    setEditError('');
     setSavingEdit(true);
+
+    const standardOldInv = buildInvoiceNumber(pay.month, pay.roomNumber);
+    const nextInvoiceNo =
+      pay.month !== editMonth && pay.invoiceNo === standardOldInv
+        ? buildInvoiceNumber(editMonth, pay.roomNumber)
+        : pay.invoiceNo;
+
     try {
-      await onUpdatePaymentDetails(paymentId, {
+      await onUpdatePaymentDetails(pay.id, {
+        tenantName: cleanName,
+        month: editMonth,
+        invoiceNo: nextInvoiceNo,
         amount: editAmount,
         lateFee: editLateFee,
+        status: editStatus,
+        paidDate: editStatus === 'Lunas' ? editPaidDate || getTodayISO() : null,
+        method: editStatus === 'Lunas' ? editMethod : null,
         notes: editNotes.trim() || undefined,
       });
       setEditingPaymentId(null);
     } finally {
       setSavingEdit(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingTarget) return;
+    setDeletingBusy(true);
+    try {
+      await onDeletePayment(deletingTarget.id);
+      if (editingPaymentId === deletingTarget.id) {
+        setEditingPaymentId(null);
+      }
+      setDeletingTarget(null);
+    } finally {
+      setDeletingBusy(false);
     }
   };
 
@@ -243,21 +320,16 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
         </div>
       </section>
 
-      {/* Filter, Generator & Pencarian */}
+      {/* Filter, Kalender & Pencarian */}
       <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div className="flex flex-wrap items-center gap-2">
-          <select
+          <MonthCalendarPicker
+            mode="month"
             value={selectedMonth}
-            onChange={(e) => onChangeMonth(e.target.value)}
-            aria-label="Pilih Periode Bulan"
-            className="px-3 py-2 rounded-lg input-surface border text-xs sm:text-sm font-medium"
-          >
-            {monthOptions.map((m) => (
-              <option key={m} value={m}>
-                {formatMonthYear(m)}
-              </option>
-            ))}
-          </select>
+            onChange={onChangeMonth}
+            activePeriods={activePaymentMonths}
+            ariaLabel="Pilih Periode Bulan Pembayaran"
+          />
 
           <div className="flex items-center gap-1 p-1 rounded-lg surface-card border border-slate-200/90 dark:border-white/[0.08]">
             {(['all', 'Belum Bayar', 'Lunas'] as const).map((status) => (
@@ -529,6 +601,11 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                           <p className="font-mono-num text-[11px] text-slate-400 dark:text-slate-500">
                             {pay.invoiceNo}
                           </p>
+                          {pay.notes && (
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate max-w-[220px]">
+                              {pay.notes}
+                            </p>
+                          )}
                         </td>
                         <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-200">
                           {roomObj ? getRoomDisplayName(roomObj) : `Kamar ${pay.roomNumber}`}
@@ -588,154 +665,311 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
                           )}
                         </td>
                         <td className="py-3 px-5 text-right">
-                          {isPaid ? (
-                            <div className="inline-flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() => onDownloadPdfReceipt(pay)}
-                                className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary text-teal-700 dark:text-teal-300"
-                                title="Unduh Kwitansi PDF"
-                                aria-label={`Unduh PDF ${pay.invoiceNo}`}
-                              >
-                                <Download className="w-3.5 h-3.5" aria-hidden="true" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => onOpenReceipt(pay)}
-                                className="min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
-                              >
-                                <ReceiptText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden="true" />
-                                <span>Kwitansi</span>
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="inline-flex items-center gap-1.5">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  isEditingThis
-                                    ? setEditingPaymentId(null)
-                                    : startEditPayment(pay)
-                                }
-                                className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary"
-                                title="Atur denda / nominal tagihan"
-                                aria-label={`Ubah nominal ${pay.tenantName}`}
-                              >
-                                <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => onOpenPaymentLinkModal(pay, roomObj)}
-                                className={`min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary ${
-                                  pay.paymentLinkId
-                                    ? 'text-teal-700 dark:text-teal-300 border-teal-500/40'
-                                    : 'text-slate-600 dark:text-slate-300'
-                                }`}
-                                title={
-                                  pay.paymentLinkId
-                                    ? 'Kelola & Salin Link Pembayaran'
-                                    : 'Buat Link Pembayaran'
-                                }
-                                aria-label="Buat atau Salin Link Pembayaran"
-                              >
-                                <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
-                              </button>
-                              {roomObj && (
-                                <>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      onCopyReminder(roomObj, grandTotal, pay)
-                                    }
-                                    className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary"
-                                    title="Salin pesan pengingat WA"
-                                    aria-label="Salin pengingat WA"
-                                  >
-                                    <Copy className="w-3.5 h-3.5" aria-hidden="true" />
-                                  </button>
-                                  {roomObj.tenant && (
-                                    <a
-                                      href={waUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary text-teal-700 dark:text-teal-300"
-                                      title="Buka & kirim langsung ke WhatsApp penyewa"
-                                      aria-label={`Kirim WA ke ${pay.tenantName}`}
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                isEditingThis
+                                  ? setEditingPaymentId(null)
+                                  : startEditPayment(pay)
+                              }
+                              className={`min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary ${
+                                isEditingThis
+                                  ? 'border-teal-500/50 text-teal-700 dark:text-teal-300'
+                                  : ''
+                              }`}
+                              title="Edit riwayat & rincian pembayaran"
+                              aria-label={`Edit pembayaran ${pay.tenantName}`}
+                            >
+                              <Pencil className="w-3.5 h-3.5" aria-hidden="true" />
+                            </button>
+
+                            {isPaid ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => onDownloadPdfReceipt(pay)}
+                                  className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary text-teal-700 dark:text-teal-300"
+                                  title="Unduh Kwitansi PDF"
+                                  aria-label={`Unduh PDF ${pay.invoiceNo}`}
+                                >
+                                  <Download className="w-3.5 h-3.5" aria-hidden="true" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenReceipt(pay)}
+                                  className="min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-secondary text-xs font-medium whitespace-nowrap"
+                                >
+                                  <ReceiptText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" aria-hidden="true" />
+                                  <span>Kwitansi</span>
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenPaymentLinkModal(pay, roomObj)}
+                                  className={`min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary ${
+                                    pay.paymentLinkId
+                                      ? 'text-teal-700 dark:text-teal-300 border-teal-500/40'
+                                      : 'text-slate-600 dark:text-slate-300'
+                                  }`}
+                                  title={
+                                    pay.paymentLinkId
+                                      ? 'Kelola & Salin Link Pembayaran'
+                                      : 'Buat Link Pembayaran'
+                                  }
+                                  aria-label="Buat atau Salin Link Pembayaran"
+                                >
+                                  <Link2 className="w-3.5 h-3.5" aria-hidden="true" />
+                                </button>
+                                {roomObj && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        onCopyReminder(roomObj, grandTotal, pay)
+                                      }
+                                      className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary"
+                                      title="Salin pesan pengingat WA"
+                                      aria-label="Salin pengingat WA"
                                     >
-                                      <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                                    </a>
-                                  )}
-                                </>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => onMarkPaid(pay.id)}
-                                className="min-h-[36px] px-3.5 py-1.5 rounded-xl btn-primary text-xs font-medium whitespace-nowrap"
-                              >
-                                {isPendingVerify ? 'Verifikasi & Kwitansi' : 'Tandai Lunas'}
-                              </button>
-                            </div>
-                          )}
+                                      <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                                    </button>
+                                    {roomObj.tenant && (
+                                      <a
+                                        href={waUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary text-teal-700 dark:text-teal-300"
+                                        title="Buka & kirim langsung ke WhatsApp penyewa"
+                                        aria-label={`Kirim WA ke ${pay.tenantName}`}
+                                      >
+                                        <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+                                      </a>
+                                    )}
+                                  </>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => onMarkPaid(pay.id)}
+                                  className="min-h-[36px] px-3.5 py-1.5 rounded-xl btn-primary text-xs font-medium whitespace-nowrap"
+                                >
+                                  {isPendingVerify ? 'Verifikasi & Kwitansi' : 'Tandai Lunas'}
+                                </button>
+                              </>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => setDeletingTarget(pay)}
+                              className="min-w-[36px] min-h-[36px] inline-flex items-center justify-center rounded-xl btn-secondary text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:border-rose-500/40"
+                              title="Hapus riwayat pembayaran"
+                              aria-label={`Hapus riwayat ${pay.tenantName} (${pay.invoiceNo})`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
+
                       {isEditingThis && (
-                        <tr className="bg-slate-50 dark:bg-white/[0.03]">
-                          <td colSpan={7} className="px-5 py-3">
-                            <div className="flex flex-wrap items-end gap-3">
-                              <div>
-                                <label className="block text-[11px] text-slate-500 mb-1">
-                                  Sewa Dasar (Rp)
-                                </label>
-                                <CurrencyInput
-                                  compact
-                                  value={editAmount}
-                                  onChange={setEditAmount}
-                                  aria-label="Sewa Dasar (Rp)"
-                                  className="w-40 pr-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
-                                />
+                        <tr className="bg-slate-50/90 dark:bg-white/[0.03]">
+                          <td colSpan={7} className="px-5 py-4">
+                            <div className="space-y-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <p className="font-display font-semibold text-xs text-slate-900 dark:text-white">
+                                  Edit Riwayat Pembayaran · {pay.invoiceNo}
+                                </p>
+                                <span className="font-mono-num text-xs text-slate-500 dark:text-slate-400">
+                                  Total baru: {formatIDR(editAmount + editLateFee)}
+                                </span>
                               </div>
-                              <div>
-                                <label className="block text-[11px] text-slate-500 mb-1">
-                                  Denda Telat (Rp)
-                                </label>
-                                <CurrencyInput
-                                  compact
-                                  value={editLateFee}
-                                  onChange={setEditLateFee}
-                                  aria-label="Denda Telat (Rp)"
-                                  className="w-36 pr-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
-                                />
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                <div>
+                                  <label
+                                    htmlFor={`edit-name-${pay.id}`}
+                                    className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1"
+                                  >
+                                    Nama Penyewa
+                                  </label>
+                                  <input
+                                    id={`edit-name-${pay.id}`}
+                                    type="text"
+                                    maxLength={100}
+                                    value={editTenantName}
+                                    onChange={(e) => setEditTenantName(e.target.value)}
+                                    className="w-full px-2.5 py-1.5 rounded-lg input-surface border text-xs"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label
+                                    htmlFor={`edit-month-${pay.id}`}
+                                    className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1"
+                                  >
+                                    Periode Bulan
+                                  </label>
+                                  <input
+                                    id={`edit-month-${pay.id}`}
+                                    type="month"
+                                    value={editMonth}
+                                    onChange={(e) => setEditMonth(e.target.value)}
+                                    className="w-full px-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label
+                                    htmlFor={`edit-amount-${pay.id}`}
+                                    className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1"
+                                  >
+                                    Sewa Dasar (Rp)
+                                  </label>
+                                  <CurrencyInput
+                                    id={`edit-amount-${pay.id}`}
+                                    compact
+                                    value={editAmount}
+                                    onChange={setEditAmount}
+                                    className="w-full pr-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label
+                                    htmlFor={`edit-late-${pay.id}`}
+                                    className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1"
+                                  >
+                                    Denda Telat (Rp)
+                                  </label>
+                                  <CurrencyInput
+                                    id={`edit-late-${pay.id}`}
+                                    compact
+                                    value={editLateFee}
+                                    onChange={setEditLateFee}
+                                    className="w-full pr-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label
+                                    htmlFor={`edit-status-${pay.id}`}
+                                    className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1"
+                                  >
+                                    Status Pembayaran
+                                  </label>
+                                  <select
+                                    id={`edit-status-${pay.id}`}
+                                    value={editStatus}
+                                    onChange={(e) => {
+                                      const next = e.target.value as PaymentStatus;
+                                      setEditStatus(next);
+                                      if (next === 'Lunas' && !editPaidDate) {
+                                        setEditPaidDate(getTodayISO());
+                                      }
+                                    }}
+                                    className="w-full px-2.5 py-1.5 rounded-lg input-surface border text-xs"
+                                  >
+                                    <option value="Belum Bayar">Belum Bayar</option>
+                                    <option value="Lunas">Lunas</option>
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label
+                                    htmlFor={`edit-date-${pay.id}`}
+                                    className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1"
+                                  >
+                                    Tanggal Bayar
+                                  </label>
+                                  <input
+                                    id={`edit-date-${pay.id}`}
+                                    type="date"
+                                    disabled={editStatus !== 'Lunas'}
+                                    value={editStatus === 'Lunas' ? editPaidDate : ''}
+                                    onChange={(e) => setEditPaidDate(e.target.value)}
+                                    className="w-full px-2.5 py-1.5 rounded-lg input-surface border font-mono-num text-xs disabled:opacity-50"
+                                  />
+                                </div>
+
+                                <div>
+                                  <label
+                                    htmlFor={`edit-method-${pay.id}`}
+                                    className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1"
+                                  >
+                                    Metode Bayar
+                                  </label>
+                                  <select
+                                    id={`edit-method-${pay.id}`}
+                                    disabled={editStatus !== 'Lunas'}
+                                    value={editMethod}
+                                    onChange={(e) =>
+                                      setEditMethod(e.target.value as PaymentMethod)
+                                    }
+                                    className="w-full px-2.5 py-1.5 rounded-lg input-surface border text-xs disabled:opacity-50"
+                                  >
+                                    {PAYMENT_METHODS.map((m) => (
+                                      <option key={m} value={m}>
+                                        {m}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                  <label
+                                    htmlFor={`edit-notes-${pay.id}`}
+                                    className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1"
+                                  >
+                                    Catatan Pembayaran
+                                  </label>
+                                  <input
+                                    id={`edit-notes-${pay.id}`}
+                                    type="text"
+                                    maxLength={300}
+                                    placeholder="Opsional (misal: koreksi nominal)"
+                                    value={editNotes}
+                                    onChange={(e) => setEditNotes(e.target.value)}
+                                    className="w-full px-2.5 py-1.5 rounded-lg input-surface border text-xs"
+                                  />
+                                </div>
                               </div>
-                              <div className="flex-1 min-w-[180px]">
-                                <label className="block text-[11px] text-slate-500 mb-1">
-                                  Catatan Tagihan
-                                </label>
-                                <input
-                                  type="text"
-                                  maxLength={300}
-                                  placeholder="Misal: Denda telat 3 hari"
-                                  value={editNotes}
-                                  onChange={(e) => setEditNotes(e.target.value)}
-                                  className="w-full px-2.5 py-1.5 rounded-lg input-surface border text-xs"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2">
+
+                              {editError && (
+                                <p className="text-xs text-rose-600 dark:text-rose-400">
+                                  {editError}
+                                </p>
+                              )}
+
+                              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                                 <button
                                   type="button"
-                                  onClick={() => setEditingPaymentId(null)}
-                                  className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs"
+                                  onClick={() => setDeletingTarget(pay)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-rose-500/30 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-xs font-medium"
                                 >
-                                  Batal
+                                  <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                                  <span>Hapus Riwayat</span>
                                 </button>
-                                <button
-                                  type="button"
-                                  disabled={savingEdit}
-                                  onClick={() => handleSavePaymentEdit(pay.id)}
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg btn-primary text-xs font-medium"
-                                >
-                                  <Save className="w-3.5 h-3.5" aria-hidden="true" />
-                                  <span>{savingEdit ? 'Menyimpan...' : 'Simpan'}</span>
-                                </button>
+
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingPaymentId(null)}
+                                    className="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.12] text-xs font-medium"
+                                  >
+                                    Batal
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={savingEdit}
+                                    onClick={() => handleSavePaymentEdit(pay)}
+                                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg btn-primary text-xs font-medium disabled:opacity-60"
+                                  >
+                                    <Save className="w-3.5 h-3.5" aria-hidden="true" />
+                                    <span>{savingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           </td>
@@ -749,6 +983,73 @@ export const PaymentsView: React.FC<PaymentsViewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Modal Konfirmasi Hapus Riwayat Pembayaran */}
+      {deletingTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-payment-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60"
+        >
+          <div className="animate-modal-in w-full max-w-md rounded-2xl surface-card border border-slate-200 dark:border-white/[0.12] bg-white dark:bg-[#101c20] shadow-2xl p-5 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <h3
+                  id="delete-payment-title"
+                  className="font-display font-semibold text-base text-slate-900 dark:text-white"
+                >
+                  Hapus Riwayat Pembayaran?
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Data transaksi ini dan link pembayarannya akan dihapus permanen dari laporan.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeletingTarget(null)}
+                aria-label="Tutup konfirmasi hapus"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] space-y-1 text-xs">
+              <p className="font-semibold text-slate-900 dark:text-white">
+                {deletingTarget.tenantName} · Kamar {deletingTarget.roomNumber}
+              </p>
+              <p className="font-mono-num text-slate-500 dark:text-slate-400">
+                {deletingTarget.invoiceNo} · {formatMonthYear(deletingTarget.month)}
+              </p>
+              <p className="font-mono-num font-semibold text-rose-600 dark:text-rose-400 pt-1">
+                {formatIDR(deletingTarget.amount + (deletingTarget.lateFee ?? 0))} (
+                {deletingTarget.status})
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                disabled={deletingBusy}
+                onClick={() => setDeletingTarget(null)}
+                className="min-h-[38px] px-4 py-2 rounded-xl btn-secondary text-xs font-medium"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={deletingBusy}
+                onClick={handleConfirmDelete}
+                className="min-h-[38px] inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-colors disabled:opacity-60"
+              >
+                <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>{deletingBusy ? 'Menghapus...' : 'Ya, Hapus Riwayat'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

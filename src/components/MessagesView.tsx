@@ -28,6 +28,7 @@ import {
   TEMPLATE_VARIABLES,
 } from '../utils/messageTemplates';
 import { buildExcelCsv, downloadCsvFile } from '../utils/csv';
+import { MonthCalendarPicker } from './MonthCalendarPicker';
 
 interface MessagesViewProps {
   templates: MessageTemplate[];
@@ -176,11 +177,11 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
     }
   }, [occupiedRooms, payments, selectedMonth, targetRoomId]);
 
-  const monthOptions = useMemo(() => {
-    const set = new Set(payments.map((p) => p.month));
-    set.add(selectedMonth);
-    return Array.from(set).sort().reverse();
-  }, [payments, selectedMonth]);
+  const activePaymentMonths = useMemo(() => {
+    const set = new Set<string>();
+    payments.forEach((p) => set.add(p.month));
+    return set;
+  }, [payments]);
 
   const targetRoom = useMemo(
     () => occupiedRooms.find((r) => r.id === targetRoomId) ?? occupiedRooms[0] ?? null,
@@ -595,20 +596,16 @@ export const MessagesView: React.FC<MessagesViewProps> = ({
           {/* Month & Target Selector */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
+              <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
                 Periode Tagihan
-              </label>
-              <select
+              </span>
+              <MonthCalendarPicker
+                mode="month"
                 value={selectedMonth}
-                onChange={(e) => onChangeMonth(e.target.value)}
-                className="w-full px-3 py-2 rounded-md input-surface border text-xs font-medium"
-              >
-                {monthOptions.map((m) => (
-                  <option key={m} value={m}>
-                    {formatMonthYear(m)}
-                  </option>
-                ))}
-              </select>
+                onChange={onChangeMonth}
+                activePeriods={activePaymentMonths}
+                ariaLabel="Pilih Periode Tagihan Pesan"
+              />
             </div>
 
             {sendMode === 'single' ? (
